@@ -1,0 +1,25 @@
+﻿<local:AdvanceWindow x:Class="CoinCollection.ServerSelectorWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:CoinCollection"
+        mc:Ignorable="d"
+        Title="Server Select" Height="100" Width="210">
+    <Grid>
+        <Button Content="New" HorizontalAlignment="Left" Margin="10,0,0,10" VerticalAlignment="Bottom" RenderTransformOrigin="0.5,0.5" Height="20" Width="50" Click="ButtonNew"/>
+        <Button Content="Select" HorizontalAlignment="Center" Width="50" Height="20" Margin="0,37,0,10" Click="ButtonSelect" VerticalAlignment="Bottom"/>
+        <Button Content="Close" Margin="0,0,10,10" VerticalAlignment="Bottom" Width="50" Height="20" Click="ButtonClose" HorizontalAlignment="Right"/>
+        <Label Content="Server not detected, select one option from the buttons below" VerticalAlignment="Top" Width="176" FontSize="6" RenderTransformOrigin="0.5,0.5" Height="19" HorizontalAlignment="Center">
+            <Label.RenderTransform>
+                <TransformGroup>
+                    <ScaleTransform/>
+                    <SkewTransform AngleX="0.956"/>
+                    <RotateTransform/>
+                    <TranslateTransform X="0.15"/>
+                </TransformGroup>
+            </Label.RenderTransform>
+        </Label>
+
+    </Grid>
+</local:AdvanceWindow>
