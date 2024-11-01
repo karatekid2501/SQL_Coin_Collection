@@ -114,6 +114,12 @@ namespace CoinCollection
             InitializeComponent();
         }
 
+        public void CloseWindow()
+        {
+            Close();
+            _host.Services.GetRequiredService<MainWindow>().Close();
+        }
+
         private void ButtonNew(object sender, RoutedEventArgs e)
         {
             _folderDialog.Check();
@@ -126,8 +132,7 @@ namespace CoinCollection
 
         private void ButtonClose(object sender, RoutedEventArgs e)
         {
-            Close();
-            _host.Services.GetRequiredService<MainWindow>().Close();
+            CloseWindow();
         }
     }
 }
