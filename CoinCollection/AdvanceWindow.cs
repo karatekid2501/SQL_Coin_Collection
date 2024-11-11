@@ -9,11 +9,18 @@ namespace CoinCollection
 {
     public partial class AdvanceWindow : Window
     {
-        public void Show(WindowStartupLocation wsl, bool topMost = false)
+        public virtual void Show(WindowStartupLocation wsl, bool topMost = false)
         {
             WindowStartupLocation = wsl;
             Topmost = topMost;
             Show();
+        }
+
+        public virtual bool? ShowDialog(WindowStartupLocation wsl, bool topMost = false)
+        {
+            WindowStartupLocation = wsl;
+            Topmost = topMost;
+            return ShowDialog();
         }
     }
 }

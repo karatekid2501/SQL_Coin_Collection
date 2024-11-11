@@ -97,19 +97,17 @@ namespace CoinCollection
             }
         }
 
-        private readonly IHost _host;
+        public bool IsCancled { get; private set; } = false;
 
         private delegate bool MainWindowMethod(string loc);
 
         private readonly OpenDialogContainer<OpenFileDialog> _fileDialog;
         private readonly OpenDialogContainer<OpenFolderDialog> _folderDialog;
 
-        public ServerSelectorWindow(IHost host)
+        public ServerSelectorWindow()
         {
-            _host = host;
-
-            _fileDialog = new(this, delegate (string loc) { return _host.Services.GetRequiredService<MainWindow>().ExistingServer(loc); });
-            _folderDialog = new(this, delegate (string loc) { return _host.Services.GetRequiredService<MainWindow>().NewServer(loc); }, 128 - 9);
+            _fileDialog = new(this, delegate (string loc) { return App.GetInstance().GetService<MainWindow>().ExistingServer(loc); });
+            _folderDialog = new(this, delegate (string loc) { return App.GetInstance().GetService<MainWindow>().NewServer(loc); }, 128 - 9);
 
             InitializeComponent();
         }
@@ -117,7 +115,7 @@ namespace CoinCollection
         public void CloseWindow()
         {
             Close();
-            _host.Services.GetRequiredService<MainWindow>().Close();
+            App.GetInstance().GetService<MainWindow>().Close();
         }
 
         private void ButtonNew(object sender, RoutedEventArgs e)
@@ -132,6 +130,7 @@ namespace CoinCollection
 
         private void ButtonClose(object sender, RoutedEventArgs e)
         {
+            IsCancled = true;
             CloseWindow();
         }
     }

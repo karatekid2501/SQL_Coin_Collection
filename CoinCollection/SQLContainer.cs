@@ -1,10 +1,12 @@
 ﻿using CoinCollection.Models;
 using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
@@ -27,47 +29,40 @@ namespace CoinCollection
 
     internal class SQLContainer
     {
-        private readonly IConfiguration _config;
+        public readonly float ServerVersion = 0.01f;
 
-        private readonly string _connectionString;
+        private readonly string _serverVersionDescription = "";
 
-        private readonly LocalDBMSSQLLocalDBContext _localDBContext;
-
-        private readonly IHost _host;
+        private LocalDBMSSQLLocalDBContext _localDBContext;
 
         private readonly int _errorTrys = 5;
         private int _currentErrorTrys = 0;
 
         private SqlConnection _sqlConnection;
 
-        private string _sqlDir;
+        private readonly string[] _tableCreationCommands = { "CDate (Id INT IDENTITY(1,1) PRIMARY KEY, Date DATE NOT NULL)",
+            "Coin (Id INT IDENTITY(1,1) PRIMARY KEY, Name NVARCHAR(50) NOT NULL, [Original Value] MONEY NOT NULL, [Retail Value] MONEY NOT NULL, [Amount Made] INT NOT NULL, ImagePath NVARCHAR(MAX) NOT NULL DEFAULT 'No_Coin_Image.jpg', Description NVARCHAR(MAX) NOT NULL)",
+            "CoinDate (Id INT IDENTITY(1,1) PRIMARY KEY, DateId INT NOT NULL, CoinId INT NOT NULL, CONSTRAINT DateFK FOREIGN KEY (DateId) REFERENCES CDate(Id), CONSTRAINT CoinFK FOREIGN KEY (CoinId) REFERENCES Coin(Id))",
+            "ServerInfo (VersionId INT IDENTITY(1,1) PRIMARY KEY, VersionNumb FLOAT NOT NULL, Description NVARCHAR(MAX), LastUpdated FLOAT NOT NULL)"};
 
-        public SQLContainer(LocalDBMSSQLLocalDBContext localDBContext, IConfiguration config, IHost host)
+        public SQLContainer()
         {
-            _config = config;
+            _sqlConnection = new SqlConnection(App.GetInstance().ConnectionString);
 
-            ArgumentNullException.ThrowIfNull(_config);
+            var optionsBuilder = new DbContextOptionsBuilder<LocalDBMSSQLLocalDBContext>();
 
-            _connectionString = _config.GetConnectionString("DefaultConnection") ?? string.Empty;
+            optionsBuilder.UseSqlServer(App.GetInstance().ConnectionString);
 
-            _sqlDir = _config.GetValue<string>("SQL Dir") ?? string.Empty;
-
-            _sqlConnection = new SqlConnection(_connectionString);
-
-            _localDBContext = localDBContext;
-
-            _host = host;
-
-            CheckServerExistance();
+            _localDBContext = new(optionsBuilder.Options);
         }
 
         public bool ExistingServer(string loc)
         {
             SqlConnection connect = new($@"Server=(localdb)\MSSQLLocalDB;AttachDbFilename={loc};Integrated Security=true;");
 
-            if(CheckTable(connect, "CDate", "Id", "Date") && CheckTable(connect, "Coin", "Id", "Name", "Original Value", "Retail Value", "Amount Made", "Image Path", "Desciption") && CheckTable(connect, "CoinDate", "Id", "DateId", "CoinId"))
+            if(ReturnCheckTable(connect))
             {
-                return true;
+                return UpdateJsonSettingsFile(loc);
             }
 
             return false;
@@ -89,6 +84,15 @@ namespace CoinCollection
                 using (connect)
                 {
                     connect.Open();
+                    command.ExecuteNonQuery();
+
+                    foreach(string tableCommand in _tableCreationCommands)
+                    {
+                        command.CommandText = $"USE Coins; CREATE TABLE {tableCommand};";
+                        command.ExecuteNonQuery();
+                    }
+
+                    command.CommandText = $"USE Coins; INSERT INTO ServerInfo (VersionNumb, Description, LastUpdated) VALUES ({ServerVersion}, '{_serverVersionDescription}', {10.1f})";
                     command.ExecuteNonQuery();
                 }
             }
@@ -136,40 +140,7 @@ namespace CoinCollection
                 }
             }
 
-            var json = JsonNode.Parse(File.ReadAllText(Path.Combine(Directory.GetCurrentDirectory(), "appsettings.json")));
-
-            if(json != null)
-            {
-                loc = Path.Combine(loc, "Coins.mdf");
-                json["SQL Dir"] = loc;
-                //json["DefaultConnection"] = $"Data Source=(LocalDB)\\MSSQLLocalDB;AttachDbFilename={loc};Integrated Security=True;Connect Timeout=30";
-
-                var jsonConnectionString = json["ConnectionStrings"];
-
-                if (jsonConnectionString != null)
-                {
-                    jsonConnectionString["DefaultConnection"] = $"Data Source=(LocalDB)\\MSSQLLocalDB;AttachDbFilename={loc};Integrated Security=True;Connect Timeout=30";
-                }
-                else
-                {
-                    json["ConnectionStrings"] = new JsonObject()
-                    {
-                        ["DefaultConnection"] = $"Data Source=(LocalDB)\\MSSQLLocalDB;AttachDbFilename={loc};Integrated Security=True;Connect Timeout=30"
-                    };
-                }
-            }
-            else
-            {
-                MessageBox.Show("Unable to open appsettings!!!");
-
-                _host.Services.GetRequiredService<ServerSelectorWindow>().CloseWindow();
-
-                return false;
-            }
-
-            File.WriteAllText(Path.Combine(Directory.GetCurrentDirectory(), "appsettings.json"), json.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
-
-            return true;
+            return UpdateJsonSettingsFile(Path.Combine(loc, "Coins.mdf"));
         }
 
         public bool HasConnected()
@@ -181,74 +152,137 @@ namespace CoinCollection
         {
             try
             {
-                using (_sqlConnection)
-                {
-                    _sqlConnection.Open();
+                _sqlConnection.Open();
 
-                    error = SQLError.None;
+                error = SQLError.None;
 
-                    return true;
-                }
+                return true;
             }
             catch (SqlException ex)
             {
-                Console.WriteLine($"SQL error: {ex.Message}");
+                Debug.WriteLine($"SQL error: {ex.Message}");
+                MessageBox.Show(ex.Message, "SQL Error");
 
                 error = SQLError.SQL;
-
-                return false;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"General error: {ex.Message}");
+                Debug.WriteLine($"General error: {ex.Message}");
+                MessageBox.Show(ex.Message, "Error");
 
                 error = SQLError.Other;
-
-                return false;
             }
+            finally
+            {
+                _sqlConnection.Close();
+            }
+
+            return false;
         }
 
-        private void CheckServerExistance()
+        //public void CheckServerExistance()
+        public bool CheckServerExistance()
         {
-            //if(string.IsNullOrEmpty(_sqlDir) || !Directory.Exists(_sqlDir))
-            if(string.IsNullOrEmpty(_sqlDir) || !File.Exists(_sqlDir))
-            {
-                _host.Services.GetRequiredService<ServerSelectorWindow>().Show(System.Windows.WindowStartupLocation.CenterScreen, true);
+            string sqlDir = App.GetInstance().SQLDir!;
 
-                return;
+            if (string.IsNullOrEmpty(sqlDir) || !File.Exists(sqlDir))
+            {
+                ServerSelectorWindow ssw = App.GetInstance().GetService<ServerSelectorWindow>();
+
+                ssw.ShowDialog(WindowStartupLocation.CenterScreen, true);
+
+                if(ssw.IsCancled)
+                {
+                    return false;
+                }
             }
 
-            if (!HasConnected(out SQLError error))
+            while (true)
             {
-                if(error != SQLError.Other)
+                if (!HasConnected(out SQLError error))
                 {
-                    /*string temp = Path.Combine(Directory.GetCurrentDirectory(), "Database");
+                    ServerSelectorWindow ssw = App.GetInstance().GetService<ServerSelectorWindow>();
 
-                    if(!Directory.Exists(temp))
+                    ssw.ShowDialog(WindowStartupLocation.CenterScreen, true);
+
+                    if (ssw.IsCancled)
                     {
-                        Directory.CreateDirectory(temp);
+                        return false;
                     }
 
-                    if(!Directory.Exists($"{Directory.GetCurrentDirectory()}\\Coins.mdf"))
+                    /*if (error != SQLError.Other)
                     {
-                        
+                        //TODO: Sort out thi piece of code
                     }
-
-                    SqlConnection connect = new(@"Server=(localdb)\MSSQLLocalDB;Integrated Security=true;");
-
-                    SqlCommand command = new($@"""CREATE DATABASE Coins ON PRIMARY (NAME = Coins_data, FILENAME = {Path.Combine(temp, "Coins.mdf")}) LOG ON (NAME = Coins_log, FILENAME = {Path.Combine(temp, "Coins.ldf")}); """, connect);
-
-                    using (connect)
+                    else
                     {
-                        connect.Open();
-                        command.ExecuteNonQuery();
+                        //TODO: Throw error message and close application!!!
+
+                        //App.GetInstance().GetService<ServerSelectorWindow>().Show(WindowStartupLocation.CenterScreen, true);
+
+                        ServerSelectorWindow ssw = App.GetInstance().GetService<ServerSelectorWindow>();
+
+                        ssw.ShowDialog(WindowStartupLocation.CenterScreen, true);
+
+                        if (ssw.IsCancled)
+                        {
+                            return;
+                        }
                     }*/
                 }
                 else
                 {
-                    //TODO: Throw error message and close application!!!
+                    if(ReturnCheckTable(_sqlConnection))
+                    {
+                        break;
+                    }
                 }
             }
+
+            return true;
+        }
+
+        public DataTable GetServerInfo()
+        {
+            _sqlConnection.Open();
+
+            SqlDataAdapter sqlDataAdapter = new ("SELECT * FROM Coin", _sqlConnection);
+
+            DataTable dt = new ();
+
+            sqlDataAdapter.Fill(dt);
+
+            _sqlConnection.Close();
+
+            return dt;
+        }
+
+        public T GetServerColumnInfo<T>(string tableName, string columnName)
+        {
+            if(string.IsNullOrEmpty(tableName) || string.IsNullOrEmpty(columnName))
+            {
+                throw new ArgumentNullException("TableName and ColumnName can not be empty!!!");
+            }
+
+            _sqlConnection.Open();
+
+            SqlCommand cmd = new ($"USE Coins; SELECT {columnName} FROM {tableName}", _sqlConnection);
+            object result = cmd.ExecuteScalar();
+
+            _sqlConnection.Close();
+
+            if (result == null || result == DBNull.Value)
+            {
+                throw new InvalidOperationException($"No data found in {tableName}.{columnName}");
+            }
+
+            return (T)Convert.ChangeType(result, typeof(T));
+        }
+
+        private static bool ReturnCheckTable(SqlConnection connect)
+        {
+            return CheckTable(connect, "CDate", "Id", "Date") && CheckTable(connect, "Coin", "Id", "Name", "Original Value", "Retail Value", "Amount Made", "ImagePath", "Description") 
+                && CheckTable(connect, "CoinDate", "Id", "DateId", "CoinId") && CheckTable(connect, "ServerInfo", "VersionId", "VersionNumb", "Description", "LastUpdated");
         }
 
         private static bool CheckTable(SqlConnection connect, string tableName, params string[] colomNames)
@@ -269,10 +303,11 @@ namespace CoinCollection
                 {
                     foreach(string colomName in colomNames)
                     {
-                        command.CommandText = $"IF COL_LENGTH('{tableName}','{colomName}') SELECT 1 ELSE SELECT 0";
+                        command.CommandText = $"IF COL_LENGTH('{tableName}','{colomName}') IS NOT NULL SELECT 1 ELSE SELECT 0";
 
                         if((int)command.ExecuteScalar() == 0)
                         {
+                            MessageBox.Show($"{connect.Database} does not have {colomName} colom in {tableName}!!!", "Error");
                             connect.Close();
                             return false;
                         }
@@ -286,6 +321,58 @@ namespace CoinCollection
             MessageBox.Show($"{connect.Database} does not have {tableName}!!!", "Error");
             connect.Close();
             return false;
+        }
+
+        private bool UpdateJsonSettingsFile(string loc)
+        {
+            if(string.IsNullOrEmpty(loc))
+            {
+                return false;
+            }
+
+            var json = JsonNode.Parse(File.ReadAllText(Path.Combine(Directory.GetCurrentDirectory(), "appsettings.json")));
+
+            if (json != null)
+            {
+                json["SQL Dir"] = loc;
+
+                var jsonConnectionString = json["ConnectionStrings"];
+
+                if (jsonConnectionString != null)
+                {
+                    jsonConnectionString["DefaultConnection"] = $"Data Source=(LocalDB)\\MSSQLLocalDB;AttachDbFilename={loc};Integrated Security=True;Connect Timeout=30";
+                }
+                else
+                {
+                    json["ConnectionStrings"] = new JsonObject()
+                    {
+                        ["DefaultConnection"] = $"Data Source=(LocalDB)\\MSSQLLocalDB;AttachDbFilename={loc};Integrated Security=True;Connect Timeout=30"
+                    };
+                }
+            }
+            else
+            {
+                MessageBox.Show("Unable to open appsettings!!!");
+
+                App.GetInstance().GetService<ServerSelectorWindow>().CloseWindow();
+
+                return false;
+            }
+
+            File.WriteAllText(Path.Combine(Directory.GetCurrentDirectory(), "appsettings.json"), json.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
+
+            //App.GetInstance().UpdateAppSettings();
+            App.GetInstance().ConfigWait.WaitOne();
+
+            _sqlConnection.ConnectionString = App.GetInstance().ConnectionString;
+
+            var optionsBuilder = new DbContextOptionsBuilder<LocalDBMSSQLLocalDBContext>();
+
+            optionsBuilder.UseSqlServer(App.GetInstance().ConnectionString);
+
+            _localDBContext = new(optionsBuilder.Options);
+
+            return true;
         }
     }
 }

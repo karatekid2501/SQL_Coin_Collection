@@ -11,20 +11,9 @@ namespace CoinCollection.Models;
 
 public partial class LocalDBMSSQLLocalDBContext : DbContext
 {
-    //public IConfiguration _config { get; private set; }
-
-    //public SqlConnection _sqlConnection;
-
-    //private readonly string _connectionString;
-
     public LocalDBMSSQLLocalDBContext(DbContextOptions<LocalDBMSSQLLocalDBContext> options)
         : base(options)
     {
-        //_config = config;
-
-        //_connectionString = _config.GetConnectionString("DefaultConnection");
-
-        //_sqlConnection = new SqlConnection(_connectionString);
     }
 
     public virtual DbSet<Cdate> Cdates { get; set; }
@@ -85,27 +74,4 @@ public partial class LocalDBMSSQLLocalDBContext : DbContext
     }
 
     partial void OnModelCreatingPartial(ModelBuilder modelBuilder);
-
-    /*public bool HasConnected()
-    {
-        try
-        {
-            using (_sqlConnection)
-            {
-                _sqlConnection.Open();
-
-                return true;
-            }
-        }
-        catch (SqlException ex)
-        {
-            Console.WriteLine($"SQL error: {ex.Message}");
-            return false;
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"General error: {ex.Message}");
-            return false;
-        }
-    }*/
 }

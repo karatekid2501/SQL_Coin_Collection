@@ -8,5 +8,24 @@
         Title="MainWindow" Height="450" Width="800" WindowStyle="None" AllowsTransparency="True">
     <Grid>
         <Grid x:Name="Overlay" Background="#4B000000" Margin="0,-16,0,0" Visibility="Hidden"/>
+        <Menu VerticalAlignment="Top">
+            <MenuItem Header="File">
+                <MenuItem Header="New"/>
+                <MenuItem Header="Clear"/>
+                <MenuItem Header="Select Another Server"/>
+                <MenuItem Header="Backup Server"/>
+                <MenuItem Header="Exit" Click="MenuFileExit"/>
+            </MenuItem>
+            <MenuItem Header="Upgrade Server">
+                
+            </MenuItem>
+            <MenuItem Header="About" Click="MenuAbout"/>
+            <MenuItem Header="Help"/>
+        </Menu>
+        <GroupBox Header="List" Width="300" Height="300" Margin="10,23,490,127">
+            <ListBox x:Name="Coin_List" Width="275" Height="275"/>
+        </GroupBox>
+        <Button x:Name="New" Content="New" HorizontalAlignment="Left" Margin="10,328,0,0" VerticalAlignment="Top" Width="100" Height="19" Click="AddServerItem"/>
+        <Button x:Name="Modify" Content="Modify" HorizontalAlignment="Left" Margin="210,328,0,0" VerticalAlignment="Top" Width="100" Height="19" Click="ModifyServerItem"/>
     </Grid>
 </local:AdvanceWindow>
