@@ -5,47 +5,80 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:CoinCollection"
         mc:Ignorable="d"
-        Title="DataModificationWindow" Height="450" Width="800">
+        Title="DataModificationWindow" Height="450" Width="800" WindowStyle="None" SizeToContent="Manual" AllowsTransparency="True">
+    <WindowChrome.WindowChrome>
+        <WindowChrome CaptionHeight="20"/>
+    </WindowChrome.WindowChrome>
     <Grid>
-        <StackPanel x:Name="Image_Viewer_Group" Width="300" Height="324" Margin="460,28,40,82">
-            <Label x:Name="Image_Name" Content="Label" VerticalAlignment="Top" FontWeight="Bold" HorizontalAlignment="Center"/>
-            <StackPanel x:Name="Image_Viewer_Background" Height="260" Width="260" Background="Black">
-                <Image x:Name="Image_Viwer" Height="250" Width="250" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="5,5,0,0"/>
+        <Grid VerticalAlignment="Top" HorizontalAlignment="Stretch" Background="CadetBlue" Height="20">
+            <Label Content="{Binding Title, RelativeSource={RelativeSource AncestorType=Window}}" VerticalAlignment="Center" HorizontalAlignment="Left" FontSize="9"/>
+            <StackPanel Height="20" WindowChrome.IsHitTestVisibleInChrome="True" VerticalAlignment="Center" HorizontalAlignment="Right" Orientation="Horizontal">
+                <Button x:Name="Minimize" Click="Minimize_Click" Width="20" FontFamily="Segoe MDL2 Assets" FontSize="16" Content="&#xE921;"/>
+                <Button x:Name="Maximize" Click="Maximize_Click" Width="20" FontFamily="Segoe MDL2 Assets" FontSize="16" Content="&#xE922;"/>
+                <Button x:Name="Exit" Click="Close_Click" Width="20" FontFamily="Segoe MDL2 Assets" FontSize="16" Content="&#xE8BB;"/>
             </StackPanel>
-            <StackPanel Margin="0,5,0,0" Height="30" Width="250">
-                <Image Width="20" Height="20" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="10,5,0,0"/>
-                <Label x:Name="Image_Warning" Height="20" Width="200" VerticalAlignment="Bottom" HorizontalAlignment="Right" Margin="0,-20,0,0"/>
+        </Grid>
+        <Grid HorizontalAlignment="Stretch" VerticalAlignment="Top" Height="430" Margin="0,20,0,0">
+            <StackPanel x:Name="Image_Viewer_Group" Width="300" Height="324" Margin="460,28,40,82">
+                <Label x:Name="Image_Name" Content="Label" VerticalAlignment="Top" FontWeight="Bold" HorizontalAlignment="Center"/>
+                <StackPanel x:Name="Image_Viewer_Background" Height="260" Width="260" Background="Black">
+                    <Image x:Name="Image_Viwer" Height="250" Width="250" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="5,5,0,0"/>
+                </StackPanel>
+                <StackPanel x:Name="Image_Warning_Group" Margin="0,5,0,0" Height="30" Width="260">
+                    <Image x:Name="Image_Warning_Icon" Width="20" Height="20" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="5,5,0,0"/>
+                    <Label x:Name="Image_Warning" Height="35" Width="220" VerticalAlignment="Top" HorizontalAlignment="Right" Margin="0,-25,10,0">
+                        <TextBlock Text="Test" TextAlignment="Left" TextWrapping="WrapWithOverflow" Margin="-5,0,0,0" Width="220" FontSize="9" Height="30"/>
+                    </Label>
+                </StackPanel>
             </StackPanel>
-        </StackPanel>
-        <StackPanel x:Name="Name_Group" Height="25" Width="220" Margin="31,28,549,381" Orientation="Horizontal" Grid.ColumnSpan="2" VerticalAlignment="Top" HorizontalAlignment="Left">
-            <Label x:Name="Name_Label" Content="Name" HorizontalAlignment="Left" FontWeight="Bold" VerticalAlignment="Top" Width="44"/>
-            <TextBox x:Name="Name_Textbox" TextWrapping="Wrap" Width="120" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="55,0,0,0"/>
-        </StackPanel>
-        <StackPanel x:Name="Description_Group" Margin="31,58,399,276" Height="100" Width="370" Orientation="Horizontal">
-            <Label x:Name="Description_Label" Content="Description" HorizontalAlignment="Left" FontWeight="Bold" VerticalAlignment="Top" Height="25" Width="75"/>
-            <TextBox x:Name="Description_Textbox" TextWrapping="Wrap" Width="270" Height="100" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="24,0,0,0"/>
-        </StackPanel>
-        <StackPanel x:Name="Amount_Made_Group" Height="25" Width="220" Margin="31,163,549,246" Orientation="Horizontal">
-            <Label x:Name="Amount_Made_Label" Content="Amount Made" HorizontalAlignment="Left" VerticalAlignment="Center" FontWeight="Bold"/>
-            <TextBox x:Name="Amount_Made_Textbox" TextWrapping="Wrap" Width="120" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="8,0,0,0"/>
-        </StackPanel>
-        <StackPanel x:Name="Currency_Type_Group" Height="25" Width="220" Margin="31,193,549,216" Orientation="Horizontal">
-            <Label x:Name="Currency_Type_Label" Content="Currency Type" HorizontalAlignment="Left" VerticalAlignment="Top" FontWeight="Bold" Height="26" Width="90"/>
-            <ComboBox x:Name="Currency_Type_ComboBox" Width="120" Height="20" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="9,0,0,0"/>
-        </StackPanel>
-        <StackPanel x:Name="Original_Value_Group" Height="25" Width="220" Margin="31,223,549,186" Orientation="Horizontal">
-            <Label x:Name="Original_Value_Label" Content="Original Value" HorizontalAlignment="Left" VerticalAlignment="Top" FontWeight="Bold" Height="26" Width="90"/>
-            <ComboBox x:Name="Original_Value_ComboBox" Width="120" Height="20" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="9,0,0,0"/>
-        </StackPanel>
-        <StackPanel x:Name="Retail_Value_Group" Height="25" Width="220" Margin="31,253,549,156" Orientation="Horizontal">
-            <Label x:Name="Retail_Value_Label" Content="Retail Value" HorizontalAlignment="Left" VerticalAlignment="Top" FontWeight="Bold" Height="25" Width="76"/>
-            <TextBox x:Name="Retail_Value_Textbox" TextWrapping="Wrap" Width="120" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="23,0,0,0"/>
-        </StackPanel>
-        <StackPanel x:Name="Image_Group" Height="25" Width="220" Margin="31,283,549,126" Orientation="Horizontal">
-            <Label x:Name="Image_Label" Content="Image" HorizontalAlignment="Center" VerticalAlignment="Top" FontWeight="Bold" Width="45" Height="26"/>
-            <ComboBox x:Name="Image_ComboBox" Width="120" Height="20" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="54,0,0,0"/>
-        </StackPanel>
-        <Button Content="Cancel" HorizontalAlignment="Left" Margin="31,332,0,0" VerticalAlignment="Top" Width="100" IsCancel="True"/>
-        <Button Content="Submit" HorizontalAlignment="Left" Margin="151,332,0,0" VerticalAlignment="Top" Width="100" IsEnabled="False"/>
+            <StackPanel x:Name="Name_Group" Height="25" Width="220" Margin="31,28,549,381" Orientation="Horizontal" Grid.ColumnSpan="2" VerticalAlignment="Top" HorizontalAlignment="Left">
+                <Label x:Name="Name_Label" Content="Name" HorizontalAlignment="Left" FontWeight="Bold" VerticalAlignment="Top" Width="44"/>
+                <TextBox x:Name="Name_Textbox" TextWrapping="Wrap" Width="120" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="55,0,0,0" LostFocus="LostFocusTextBoxEvent">
+                    <TextBox.InputBindings>
+                        <KeyBinding Key="Esc" Command="{Binding DeselectCommand}"></KeyBinding>
+                    </TextBox.InputBindings>
+                </TextBox>
+            </StackPanel>
+            <StackPanel x:Name="Description_Group" Margin="31,58,399,276" Height="100" Width="370" Orientation="Horizontal">
+                <Label x:Name="Description_Label" Content="Description" HorizontalAlignment="Left" FontWeight="Bold" VerticalAlignment="Top" Height="25" Width="75"/>
+                <TextBox x:Name="Description_Textbox" TextWrapping="Wrap" Width="270" Height="100" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="24,0,0,0" LostFocus="LostFocusTextBoxEvent">
+                    <TextBox.InputBindings>
+                        <KeyBinding Key="Esc" Command="{Binding DeselectCommand}"></KeyBinding>
+                    </TextBox.InputBindings>
+                </TextBox>
+            </StackPanel>
+            <StackPanel x:Name="Amount_Made_Group" Height="25" Width="220" Margin="31,163,549,246" Orientation="Horizontal">
+                <Label x:Name="Amount_Made_Label" Content="Amount Made" HorizontalAlignment="Left" VerticalAlignment="Center" FontWeight="Bold"/>
+                <TextBox x:Name="Amount_Made_Textbox" TextWrapping="Wrap" Width="120" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="8,0,0,0" LostFocus="LostFocusTextBoxEvent">
+                    <TextBox.InputBindings>
+                        <KeyBinding Key="Esc" Command="{Binding DeselectCommand}"></KeyBinding>
+                    </TextBox.InputBindings>
+                </TextBox>
+            </StackPanel>
+            <StackPanel x:Name="Currency_Type_Group" Height="25" Width="220" Margin="31,193,549,216" Orientation="Horizontal">
+                <Label x:Name="Currency_Type_Label" Content="Currency Type" HorizontalAlignment="Left" VerticalAlignment="Top" FontWeight="Bold" Height="26" Width="90"/>
+                <ComboBox x:Name="Currency_Type_ComboBox" Width="120" Height="20" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="9,0,0,0" SelectionChanged="Currency_Type_ComboBox_SelectionChanged"/>
+            </StackPanel>
+            <StackPanel x:Name="Original_Value_Group" Height="25" Width="220" Margin="31,223,549,186" Orientation="Horizontal">
+                <Label x:Name="Original_Value_Label" Content="Original Value" HorizontalAlignment="Left" VerticalAlignment="Top" FontWeight="Bold" Height="26" Width="90"/>
+                <ComboBox x:Name="Original_Value_ComboBox" Width="120" Height="20" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="9,0,0,0"/>
+            </StackPanel>
+            <StackPanel x:Name="Retail_Value_Group" Height="25" Width="220" Margin="31,253,549,156" Orientation="Horizontal">
+                <Label x:Name="Retail_Value_Label" Content="Retail Value" HorizontalAlignment="Left" VerticalAlignment="Top" FontWeight="Bold" Height="25" Width="76"/>
+                <TextBox x:Name="Retail_Value_Textbox" TextWrapping="Wrap" Width="120" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="23,0,0,0" LostFocus="LostFocusTextBoxEvent">
+                    <TextBox.InputBindings>
+                        <KeyBinding Key="Esc" Command="{Binding DeselectCommand}"></KeyBinding>
+                    </TextBox.InputBindings>
+                </TextBox>
+            </StackPanel>
+            <StackPanel x:Name="Image_Group" Height="25" Width="440" Margin="31,283,329,126" Orientation="Horizontal">
+                <Label x:Name="Image_Label" Content="Image" HorizontalAlignment="Center" VerticalAlignment="Top" FontWeight="Bold" Width="45" Height="26"/>
+                <ComboBox x:Name="Image_ComboBox" Width="120" Height="20" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="54,0,0,0" SelectionChanged="Image_ComboBox_SelectionChanged"/>
+                <Button x:Name="Image_AddButton" Content="Add" Width="100" Height="20" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="10,0,0,0" Click="AddNewImage"/>
+                <Button x:Name="Image_UpdateButton" Content="Update" Width="100" Height="20" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="10,0,0,0" Click="UpdateCoinImages"/>
+            </StackPanel>
+            <Button Content="Cancel" HorizontalAlignment="Left" Margin="31,332,0,0" VerticalAlignment="Top" Width="100" Click="Close_Click"/>
+            <Button x:Name="Submit" Content="Submit" HorizontalAlignment="Left" Margin="151,332,0,0" VerticalAlignment="Top" Width="100" IsEnabled="False"/>
+        </Grid>
     </Grid>
 </local:AdvanceWindow>

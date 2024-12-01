@@ -5,21 +5,27 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:CoinCollection"
         mc:Ignorable="d"
-        Title="Server Select" Height="100" Width="210">
+        Title="Server Select" Height="100" Width="300" WindowStyle="None" AllowsTransparency="True" SizeToContent="WidthAndHeight" ResizeMode="NoResize">
+    <WindowChrome.WindowChrome>
+        <WindowChrome CaptionHeight="20"/>
+    </WindowChrome.WindowChrome>
+    <Window.Effect>
+        <DropShadowEffect Color="CadetBlue" BlurRadius="20" Direction="-90" RenderingBias="Quality" ShadowDepth="4"/>
+    </Window.Effect>
     <Grid>
-        <Button Content="New" HorizontalAlignment="Left" Margin="10,0,0,10" VerticalAlignment="Bottom" RenderTransformOrigin="0.5,0.5" Height="20" Width="50" Click="ButtonNew"/>
-        <Button Content="Select" HorizontalAlignment="Center" Width="50" Height="20" Margin="0,37,0,10" Click="ButtonSelect" VerticalAlignment="Bottom"/>
-        <Button Content="Close" Margin="0,0,10,10" VerticalAlignment="Bottom" Width="50" Height="20" Click="ButtonClose" HorizontalAlignment="Right"/>
-        <Label Content="Server not detected, select one option from the buttons below" VerticalAlignment="Top" Width="176" FontSize="6" RenderTransformOrigin="0.5,0.5" Height="19" HorizontalAlignment="Center">
-            <Label.RenderTransform>
-                <TransformGroup>
-                    <ScaleTransform/>
-                    <SkewTransform AngleX="0.956"/>
-                    <RotateTransform/>
-                    <TranslateTransform X="0.15"/>
-                </TransformGroup>
-            </Label.RenderTransform>
-        </Label>
-
+        <Grid VerticalAlignment="Top" HorizontalAlignment="Stretch" Background="CadetBlue" Height="20">
+            <Label Content="{Binding Title, RelativeSource={RelativeSource AncestorType=Window}}" VerticalAlignment="Center" HorizontalAlignment="Left" FontSize="9"/>
+            <StackPanel Height="20" WindowChrome.IsHitTestVisibleInChrome="True" VerticalAlignment="Center" HorizontalAlignment="Right" Orientation="Horizontal">
+                <Button x:Name="Exit" Click="Close_Click" Width="20" FontFamily="Segoe MDL2 Assets" FontSize="16" Content="&#xE8BB;"/>
+            </StackPanel>
+        </Grid>
+        <Grid HorizontalAlignment="Stretch" VerticalAlignment="Top" Height="80" Margin="0,20,0,0">
+                <Label VerticalAlignment="Top" Width="300" Height="40" HorizontalAlignment="Center">
+                    <TextBlock Text="Server not detected, select one option from the buttons below" TextAlignment="Center" TextWrapping="WrapWithOverflow" Margin="20,0,0,0"/>
+                </Label>
+                <Button Content="New" HorizontalAlignment="Left" Margin="10,0,0,10" VerticalAlignment="Bottom" Height="20" Width="75" Click="ButtonNew"/>
+                <Button Content="Select" HorizontalAlignment="Center" Width="75" Height="20" Margin="0,37,0,10" Click="ButtonSelect" VerticalAlignment="Bottom"/>
+                <Button Content="Close" Margin="0,0,10,10" VerticalAlignment="Bottom" Width="75" Height="20" Click="ButtonClose" HorizontalAlignment="Right"/>
+        </Grid>
     </Grid>
 </local:AdvanceWindow>

@@ -29,66 +29,16 @@ namespace CoinCollection
 
         private readonly SQLContainer _container;
 
-        private class Currency
-        {
-            public string CurrencyName {  get; private set; }
+        //private Visibility _overlayVis { get { return Overlay.Visibility; } set { Overlay.Visibility = value; } }
 
-            public string[] CurrencyInfo { get; private set; }
-
-            public Currency()
-            {
-                CurrencyName = "Unknown";
-                CurrencyInfo = ["Unknown"];
-            }
-
-            public Currency(string fileLocation)
-            {
-                string[] fileInfo = File.ReadAllText(fileLocation).Split(',');
-
-                List<string> tempCurrencyInfo = ["Unknown"];
-
-                foreach(string info in fileInfo)
-                {
-                    if (info.StartsWith('[') && info.EndsWith(']'))
-                    {
-                        CurrencyName = info[1..info.IndexOf(']')];
-                    }
-                    else
-                    {
-                        tempCurrencyInfo.Add(info);
-                    }
-                }
-
-                CurrencyInfo = [..tempCurrencyInfo];
-
-                if(string.IsNullOrEmpty(CurrencyName))
-                {
-                    CurrencyName = Path.GetFileName(fileLocation);
-                    CurrencyName = CurrencyName[..CurrencyName.IndexOf('.')];
-                }
-            }
-        }
-
-        private readonly List<Currency> _currencies = [];
-
-        public MainWindow()
+        public MainWindow() : base()
         {
             InitializeComponent();
 
             App.GetInstance().GetService<ServerSelectorWindow>().Loaded += ShowOverlay;
             App.GetInstance().GetService<ServerSelectorWindow>().Closed += HideOverlay;
-            
-            App.GetInstance().GetService<DataModificationWindow>().Loaded += ShowOverlay;
-            App.GetInstance().GetService<DataModificationWindow>().Closed += HideOverlay;
 
-            _currencies.Add(new());
-
-            string[] currencyDirs = Directory.GetFiles(Path.Combine(Directory.GetCurrentDirectory(), "Currency"));
-
-            foreach(string currencyDir in currencyDirs)
-            {
-                _currencies.Add(new (currencyDir));
-            }
+            App.GetInstance().GetService<DataModificationWindow>().IsVisibleChanged += DMWIsVisableChanged;
 
             _container = new();
         }
@@ -108,8 +58,9 @@ namespace CoinCollection
             App.GetInstance().GetService<ServerSelectorWindow>().Loaded -= ShowOverlay;
             App.GetInstance().GetService<ServerSelectorWindow>().Closed -= HideOverlay;
 
-            App.GetInstance().GetService<DataModificationWindow>().Loaded -= ShowOverlay;
-            App.GetInstance().GetService<DataModificationWindow>().Closed -= HideOverlay;
+            App.GetInstance().GetService<DataModificationWindow>().IsVisibleChanged -= DMWIsVisableChanged;
+
+            App.GetInstance().GetService<DataModificationWindow>().Close();
 
             base.OnClosed(e);
         }
@@ -117,6 +68,7 @@ namespace CoinCollection
         public void ShowOverlay(Visibility v)
         {
             Overlay.Visibility = v;
+            //_overlayVis = v;
         }
 
         public bool ExistingServer(string loc)
@@ -139,26 +91,35 @@ namespace CoinCollection
             ShowOverlay(Visibility.Collapsed);
         }
 
-        private void MenuFileExit(object sender, RoutedEventArgs e)
+        private void DMWIsVisableChanged(object? o, DependencyPropertyChangedEventArgs e)
         {
-            //TODO: Need to ensure that the exit button on window calls this method when exiting
+            if((bool)e.NewValue)
+            {
+                ShowOverlay(Visibility.Visible);
+            }
+            else
+            {
+                ShowOverlay(Visibility.Collapsed);
+            }
+        }
 
+        protected override void Close_Click(object sender, RoutedEventArgs e)
+        {
             //This fixes an issue where the program will softlock when attempting to close the main window when clicking on the exit button
             App.GetInstance().GetService<ServerSelectorWindow>().Close();
-
-            Close();
+            base.Close_Click(sender, e);
         }
 
         private void MenuAbout(object sender, RoutedEventArgs e)
         {
-            //TODO: Show overlay on main window
-
+            ShowOverlay(Visibility.Visible);
             MessageBox.Show($"Version: {VersionNumb} \nServer Version: {_container.GetServerColumnInfo<string>("ServerInfo", "VersionNumb")}", "About");
+            ShowOverlay(Visibility.Hidden);
         }
 
         private void ModifyServerItem(object sender, RoutedEventArgs e)
         {
-
+            App.GetInstance().GetService<DataModificationWindow>().ShowDialog(WindowStartupLocation.CenterScreen, true, DMWindowTitleName.Modify);
         }
 
         private void AddServerItem(object sender, RoutedEventArgs e)

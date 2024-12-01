@@ -5,27 +5,41 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:CoinCollection"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800" WindowStyle="None" AllowsTransparency="True">
+        Title="MainWindow" Height="450" Width="800" WindowStyle="None" AllowsTransparency="True" SizeToContent="Manual" BorderThickness="1">
+    <WindowChrome.WindowChrome>
+        <WindowChrome CaptionHeight="20" GlassFrameThickness="0" CornerRadius="0"/>
+    </WindowChrome.WindowChrome>
     <Grid>
+        <Grid VerticalAlignment="Top" HorizontalAlignment="Stretch" Background="CadetBlue" Height="20">
+            <Label Content="{Binding Title, RelativeSource={RelativeSource AncestorType=Window}}" VerticalAlignment="Center" HorizontalAlignment="Left" FontSize="9"/>
+            <StackPanel Height="20" WindowChrome.IsHitTestVisibleInChrome="True" VerticalAlignment="Center" HorizontalAlignment="Right" Orientation="Horizontal">
+                <Button x:Name="Minimize" Click="Minimize_Click" Width="20" FontFamily="Segoe MDL2 Assets" FontSize="16" Content="&#xE921;"/>
+                <Button x:Name="Maximize" Click="Maximize_Click" Width="20" FontFamily="Segoe MDL2 Assets" FontSize="16" Content="&#xE922;"/>
+                <Button x:Name="Exit" Click="Close_Click" Width="20" FontFamily="Segoe MDL2 Assets" FontSize="16" Content="&#xE8BB;"/>
+            </StackPanel>
+        </Grid>
+        <Grid HorizontalAlignment="Stretch" VerticalAlignment="Top" Height="430" Margin="0,20,0,0">
+            <Menu VerticalAlignment="Top">
+                <MenuItem Header="File">
+                    <MenuItem Header="New"/>
+                    <MenuItem Header="Clear"/>
+                    <MenuItem Header="Select Another Server"/>
+                    <MenuItem Header="Backup Server"/>
+                    <MenuItem Header="Exit" Click="Close_Click"/>
+                </MenuItem>
+                <MenuItem Header="Upgrade Server">
+
+                </MenuItem>
+                <MenuItem Header="About" Click="MenuAbout"/>
+                <MenuItem Header="Help"/>
+            </Menu>
+            <GroupBox Header="List" Width="300" Height="300" Margin="10,23,0,0" HorizontalAlignment="Left" VerticalAlignment="Top">
+                <ListBox x:Name="Coin_List" Width="275" Height="275"/>
+            </GroupBox>
+            <Button x:Name="New" Content="New" HorizontalAlignment="Left" Margin="115,328,0,0" VerticalAlignment="Top" Width="100" Height="19" Click="AddServerItem"/>
+            <Button x:Name="Modify" Content="Modify" HorizontalAlignment="Left" Margin="220,328,0,0" VerticalAlignment="Top" Width="100" Height="19" Click="ModifyServerItem"/>
+            <Button x:Name="Delete" Content="Delete" HorizontalAlignment="Left" Margin="10,328,0,0" VerticalAlignment="Top" Width="100" Height="19" Click="ModifyServerItem" IsEnabled="False"/>
+        </Grid>
         <Grid x:Name="Overlay" Background="#4B000000" Margin="0,-16,0,0" Visibility="Hidden"/>
-        <Menu VerticalAlignment="Top">
-            <MenuItem Header="File">
-                <MenuItem Header="New"/>
-                <MenuItem Header="Clear"/>
-                <MenuItem Header="Select Another Server"/>
-                <MenuItem Header="Backup Server"/>
-                <MenuItem Header="Exit" Click="MenuFileExit"/>
-            </MenuItem>
-            <MenuItem Header="Upgrade Server">
-                
-            </MenuItem>
-            <MenuItem Header="About" Click="MenuAbout"/>
-            <MenuItem Header="Help"/>
-        </Menu>
-        <GroupBox Header="List" Width="300" Height="300" Margin="10,23,490,127">
-            <ListBox x:Name="Coin_List" Width="275" Height="275"/>
-        </GroupBox>
-        <Button x:Name="New" Content="New" HorizontalAlignment="Left" Margin="10,328,0,0" VerticalAlignment="Top" Width="100" Height="19" Click="AddServerItem"/>
-        <Button x:Name="Modify" Content="Modify" HorizontalAlignment="Left" Margin="210,328,0,0" VerticalAlignment="Top" Width="100" Height="19" Click="ModifyServerItem"/>
     </Grid>
 </local:AdvanceWindow>

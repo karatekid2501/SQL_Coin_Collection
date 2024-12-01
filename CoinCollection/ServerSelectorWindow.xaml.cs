@@ -118,6 +118,12 @@ namespace CoinCollection
             App.GetInstance().GetService<MainWindow>().Close();
         }
 
+        protected override void Close_Click(object sender, RoutedEventArgs e)
+        {
+            IsCancled = true;
+            CloseWindow();
+        }
+
         private void ButtonNew(object sender, RoutedEventArgs e)
         {
             _folderDialog.Check();
@@ -130,6 +136,7 @@ namespace CoinCollection
 
         private void ButtonClose(object sender, RoutedEventArgs e)
         {
+            //TODO Consider changing the Close_Click
             IsCancled = true;
             CloseWindow();
         }

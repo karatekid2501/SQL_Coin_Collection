@@ -4,6 +4,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Primitives;
+using System.Collections.ObjectModel;
 using System.Configuration;
 using System.Data;
 using System.Diagnostics;
@@ -26,11 +27,15 @@ namespace CoinCollection
 
         public string? ConnectionString { get; private set; }
 
+        public ReadOnlyCollection<Currency> Currencies => _currencies.AsReadOnly();
+
         public readonly ManualResetEvent ConfigWait;
 
         private readonly IHost _host;
 
         private readonly IChangeToken _configToken;
+
+        private readonly List<Currency> _currencies = [];
 
         public App()
         {
@@ -44,6 +49,15 @@ namespace CoinCollection
             }
 
             CheckAppSettingsExist();
+
+            _currencies.Add(new());
+
+            string[] currencyDirs = Directory.GetFiles(Path.Combine(Directory.GetCurrentDirectory(), "Currency"));
+
+            foreach (string currencyDir in currencyDirs)
+            {
+                _currencies.Add(new(currencyDir));
+            }
 
             _host = Host.CreateDefaultBuilder().ConfigureAppConfiguration((context, config) =>
                 {
