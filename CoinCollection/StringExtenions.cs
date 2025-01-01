@@ -1,5 +1,8 @@
 ﻿namespace CoinCollection
 {
+    /// <summary>
+    /// Cleans up string
+    /// </summary>
     public enum StringCleanUp
     {
         None,
@@ -8,8 +11,19 @@
         TrimEnd
     }
 
+    /// <summary>
+    /// Extensions for strings
+    /// </summary>
     public static class StringExtenions
     {
+        /// <summary>
+        /// Goes through the string and gets the string after a certain amount of the charCheck is checked.
+        /// </summary>
+        /// <param name="s">String to test</param>
+        /// <param name="charCheck">Character to check</param>
+        /// <param name="amount">How many positions to check by</param>
+        /// <param name="scu">Type of string cleanup</param>
+        /// <returns>Altered string unless no cherCheck can be found, which original string is returned.</returns>
         public static string IndexOfPos(this string s, char charCheck, int amount, StringCleanUp scu = StringCleanUp.None)
         {
             if(string.IsNullOrEmpty(s))

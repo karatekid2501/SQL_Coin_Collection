@@ -1,14 +1,9 @@
-﻿using CoinCollection.Models;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Primitives;
 using System.Collections.ObjectModel;
-using System.Configuration;
-using System.Data;
-using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -21,12 +16,16 @@ namespace CoinCollection
     /// </summary>
     public partial class App : Application
     {
+        //Instance of the App
         private static App? _instance;
 
+        //Directory of the SQL server
         public string? SQLDir { get; private set; }
 
+        //String for the connection of the server
         public string? ConnectionString { get; private set; }
 
+        //Readonly currency list
         public ReadOnlyCollection<Currency> Currencies => _currencies.AsReadOnly();
 
         public readonly ManualResetEvent ConfigWait;
@@ -50,6 +49,7 @@ namespace CoinCollection
 
             CheckAppSettingsExist();
 
+            //Adds the defualt currency type Unknown
             _currencies.Add(new());
 
             string[] currencyDirs = Directory.GetFiles(Path.Combine(Directory.GetCurrentDirectory(), "Currency"));
@@ -127,11 +127,14 @@ namespace CoinCollection
             base.OnExit(e);
         }
 
+        /// <summary>
+        /// Checks if the settings file exists and generates a new settings file if one is not present
+        /// </summary>
         private static void CheckAppSettingsExist()
         {
             if(!File.Exists(Path.Combine(Directory.GetCurrentDirectory(), "appsettings.json")))
             {
-                //TODO: Fix issue when trying to disaply messagebox before IHost is created
+                //TODO: Fix issue when trying to display messagebox before IHost is created
                 //MessageBox.Show("No settings file exists, creating new one!!!", "Warning", MessageBoxButton.OK);
 
                 JsonObject jObject = new()

@@ -1,16 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.IO;
 
 namespace CoinCollection
 {
+    /// <summary>
+    /// Currency information
+    /// </summary>
     public class Currency
     {
         public string CurrencyName { get; private set; }
 
+        //List of currency used from the currency name
         public string[] CurrencyInfo { get; private set; }
 
         public Currency()
@@ -37,8 +36,10 @@ namespace CoinCollection
                 }
             }
 
+            //Converts the list of currency information to an array
             CurrencyInfo = [.. tempCurrencyInfo];
 
+            //If the currency name is not found within the file, the name is taken from the file name
             if (string.IsNullOrEmpty(CurrencyName))
             {
                 CurrencyName = Path.GetFileName(fileLocation);

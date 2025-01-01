@@ -1,13 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Input;
+﻿using System.Windows.Input;
 
 namespace CoinCollection
 {
     //https://stackoverflow.com/questions/22285866/why-relaycommand
+
+    /// <summary>
+    /// Relay command for XAML windows
+    /// </summary>
+    /// <typeparam name="T">Type of the command</typeparam>
     internal class RelayCommand<T> : ICommand
     {
         #region Fields
@@ -40,8 +40,6 @@ namespace CoinCollection
 
             _execute = execute;
             _canExecute = canExecute;
-
-
         }
 
         #endregion
@@ -93,6 +91,10 @@ namespace CoinCollection
         #endregion
     }
 
+    /// <summary>
+    /// Basic relay command for XAML window
+    /// </summary>
+    /// <param name="execute">Basic action to execute</param>
     internal class RelayCommand(Action execute) : RelayCommand<object>(_ => execute())
     {
     }

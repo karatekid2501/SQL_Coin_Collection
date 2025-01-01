@@ -1,10 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
+﻿using System.Diagnostics;
 using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Interop;
@@ -12,8 +7,12 @@ using System.Runtime.CompilerServices;
 
 namespace CoinCollection
 {
+    /// <summary>
+    /// Additional options for the Window class
+    /// </summary>
     public partial class AdvanceWindow : Window
     {
+        #region Fix for WindowChrome fall screen issue
         //https://www.youtube.com/watch?v=4JK9VtU8bYw
         private static IntPtr WindowProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
         {
@@ -130,6 +129,7 @@ namespace CoinCollection
 
         [LibraryImport("User32")]
         internal static partial IntPtr MonitorFromWindow(IntPtr handle, int flags);
+        #endregion
 
         //https://learn.microsoft.com/en-us/windows/apps/design/style/segoe-ui-symbol-font
         protected readonly string _maximizeIcon = "\uE922";
@@ -143,8 +143,17 @@ namespace CoinCollection
 
         private readonly bool _reuseClose = false;
 
+        /// <summary>
+        /// Constructor for the AdvanceWindow class
+        /// </summary>
+        /// <param name="reuseClose">Reuse the window when its closed</param>
+        /// <param name="maximizeName">Name of the maximum button</param>
+        /// <param name="minimizeName">Name of the minimise button</param>
+        /// <param name="closeName">Name of the close button</param>
         public AdvanceWindow(bool reuseClose = false, string maximizeName = "Maximize", string minimizeName = "minimize", string closeName = "Close") : base()
         {
+            //TODO: Fix issue with minimize name not capitalised
+
             Loaded += OnLoad;
             SourceInitialized += SourceInit;
             StateChanged += ChangeSize;
@@ -165,6 +174,11 @@ namespace CoinCollection
             base.OnClosed(e);
         }
 
+        /// <summary>
+        /// Opens a window and returns without waiting for the newly opened window to close.
+        /// </summary>
+        /// <param name="wsl">Start up location of the window</param>
+        /// <param name="topMost">Should the window always be on top</param>
         public virtual void Show(WindowStartupLocation wsl, bool topMost = false)
         {
             WindowStartupLocation = wsl;
@@ -172,6 +186,15 @@ namespace CoinCollection
             Show();
         }
 
+        /// <summary>
+        /// Opens a window and returns only when the newly opened window is closed.
+        /// </summary>
+        /// <param name="wsl">Start up location of the window</param>
+        /// <param name="topMost">Should the window always be on top</param>
+        /// <returns>
+        /// A <see cref="System.Nullable"/> value of type <see cref="System.Boolean"/> that specifies whether the activity
+        /// was accepted (<see href="true"/>) or canceled (<see href="false"/>). The return value is the value of the
+        /// <see cref="System.Windows.Window.DialogResult"/> property before a window closes.</returns>
         public virtual bool? ShowDialog(WindowStartupLocation wsl, bool topMost = false)
         {
             WindowStartupLocation = wsl;
@@ -234,6 +257,11 @@ namespace CoinCollection
             FindButton(_maximizeName, ref _maximize!);
         }
 
+        /// <summary>
+        /// Trys to find the button in the XAML
+        /// </summary>
+        /// <param name="buttonName">Name of the button</param>
+        /// <param name="button">Reference to the button value to store the found button</param>
         private void FindButton(string buttonName, ref Button button, [CallerArgumentExpression(nameof(buttonName))] string parameterName = "Name not found!!!", [CallerLineNumber] int lineNumb = -1)
         {
             if (string.IsNullOrEmpty(buttonName))

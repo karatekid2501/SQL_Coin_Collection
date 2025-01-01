@@ -22,7 +22,7 @@
             <Menu VerticalAlignment="Top">
                 <MenuItem Header="File">
                     <MenuItem Header="New"/>
-                    <MenuItem Header="Clear"/>
+                    <MenuItem x:Name="Menu_Clear" Header="Clear" Click="ClearServer" IsEnabled="False"/>
                     <MenuItem Header="Select Another Server"/>
                     <MenuItem Header="Backup Server"/>
                     <MenuItem Header="Exit" Click="Close_Click"/>
@@ -33,12 +33,56 @@
                 <MenuItem Header="About" Click="MenuAbout"/>
                 <MenuItem Header="Help"/>
             </Menu>
-            <GroupBox Header="List" Width="300" Height="300" Margin="10,23,0,0" HorizontalAlignment="Left" VerticalAlignment="Top">
-                <ListBox x:Name="Coin_List" Width="275" Height="275"/>
+            <GroupBox Header="Coin List" Width="300" Height="300" Margin="10,23,0,0" HorizontalAlignment="Left" VerticalAlignment="Top">
+                <ListBox x:Name="Coin_List" Width="275" Height="275" SelectionChanged="Coin_List_SelectionChanged"/>
+            </GroupBox>
+            <GroupBox Header="Coin Info" Margin="325,23,23,7" Width="450" Height="400">
+                <StackPanel Orientation="Vertical">
+                    <StackPanel x:Name="ID_Group" Height="25" Width="425" Margin="5,0,0,0" Orientation="Horizontal" VerticalAlignment="Top" HorizontalAlignment="Left">
+                        <Label x:Name="ID_Label" Content="ID:" HorizontalAlignment="Left" FontWeight="Bold" VerticalAlignment="Top"/>
+                        <Label x:Name="ID_Coin_Label" Content="No data for coin ID" Margin="69,0,0,0"/>
+                    </StackPanel>
+                    <StackPanel x:Name="Name_Group" Height="25" Width="425" Margin="5,0,0,0" Orientation="Horizontal" VerticalAlignment="Top" HorizontalAlignment="Left">
+                        <Label x:Name="Name_Label" Content="Name:" HorizontalAlignment="Left" FontWeight="Bold" VerticalAlignment="Top"/>
+                        <Label x:Name="Name_Coin_Label" Content="No data for coin name" Margin="48.5,0,0,0"/>
+                    </StackPanel>
+                    <StackPanel x:Name="Description_Group" Height="110" Width="425" Margin="5,0,0,0" Orientation="Horizontal" VerticalAlignment="Top" HorizontalAlignment="Left">
+                        <Label x:Name="Description_Label" Content="Description:" HorizontalAlignment="Left" FontWeight="Bold" VerticalAlignment="Top"/>
+                        <Label x:Name="Description_Coin_Label" Margin="17,0,0,0">
+                            <TextBox x:Name="Description_Textbox" TextWrapping="Wrap" Width="320" Height="100" HorizontalAlignment="Right" VerticalAlignment="Center" IsEnabled="False"/>
+                        </Label>
+                    </StackPanel>
+                    <StackPanel x:Name="Date_Group" Height="25" Width="425" Margin="5,0,0,0" Orientation="Horizontal" VerticalAlignment="Top" HorizontalAlignment="Left">
+                        <Label x:Name="Date_Label" Content="Date:" HorizontalAlignment="Left" FontWeight="Bold" VerticalAlignment="Top"/>
+                        <Label x:Name="Date_Coin_Label" Content="No data for coin Date" Margin="55,0,0,0"/>
+                    </StackPanel>
+                    <StackPanel x:Name="Amount_Made_Group" Height="25" Width="425" Margin="5,0,0,0" Orientation="Horizontal" VerticalAlignment="Top" HorizontalAlignment="Left">
+                        <Label x:Name="Amount_Made_Label" Content="Amount Made:" HorizontalAlignment="Left" FontWeight="Bold" VerticalAlignment="Top"/>
+                        <Label x:Name="Amount_Made_Coin_Label" Content="No data for coin amount made"/>
+                    </StackPanel>
+                    <StackPanel x:Name="Currency_Type_Group" Height="25" Width="425" Margin="5,0,0,0" Orientation="Horizontal" VerticalAlignment="Top" HorizontalAlignment="Left">
+                        <Label x:Name="Currency_Type_Label" Content="Currency Type:" HorizontalAlignment="Left" FontWeight="Bold" VerticalAlignment="Top"/>
+                        <Label x:Name="Currency_Type_Coin_Label" Content="No data for coin currency type"/>
+                    </StackPanel>
+                    <StackPanel x:Name="Original_Value_Group" Height="25" Width="425" Margin="5,0,0,0" Orientation="Horizontal" VerticalAlignment="Top" HorizontalAlignment="Left">
+                        <Label x:Name="Original_Value_Label" Content="Original Value:" HorizontalAlignment="Left" FontWeight="Bold" VerticalAlignment="Top"/>
+                        <Label x:Name="Original_Value_Coin_Label" Content="No data for coin original value" Margin="1,0,0,0"/>
+                    </StackPanel>
+                    <StackPanel x:Name="Retail_Value_Group" Height="25" Width="425" Margin="5,0,0,0" Orientation="Horizontal" VerticalAlignment="Top" HorizontalAlignment="Left">
+                        <Label x:Name="Retail_Value_Label" Content="Retail Value:" HorizontalAlignment="Left" FontWeight="Bold" VerticalAlignment="Top"/>
+                        <Label x:Name="Retail_Value_Coin_Label" Content="No data for coin retail value" Margin="15,0,0,0"/>
+                    </StackPanel>
+                    <StackPanel x:Name="Image_Group" Height="90" Width="425" Margin="5,0,0,0" Orientation="Horizontal" VerticalAlignment="Top" HorizontalAlignment="Left">
+                        <Label x:Name="Image_Label" Content="Image:" HorizontalAlignment="Left" FontWeight="Bold" VerticalAlignment="Top"/>
+                        <Label x:Name="Image_Coin_Label" Content="No data for image" Margin="46,0,0,0"/>
+                        <Image x:Name="Image_Display" Width="90"/>
+                    </StackPanel>
+                </StackPanel>
             </GroupBox>
             <Button x:Name="New" Content="New" HorizontalAlignment="Left" Margin="115,328,0,0" VerticalAlignment="Top" Width="100" Height="19" Click="AddServerItem"/>
-            <Button x:Name="Modify" Content="Modify" HorizontalAlignment="Left" Margin="220,328,0,0" VerticalAlignment="Top" Width="100" Height="19" Click="ModifyServerItem"/>
-            <Button x:Name="Delete" Content="Delete" HorizontalAlignment="Left" Margin="10,328,0,0" VerticalAlignment="Top" Width="100" Height="19" Click="ModifyServerItem" IsEnabled="False"/>
+            <Button x:Name="Modify" Content="Modify" HorizontalAlignment="Left" Margin="220,328,0,0" VerticalAlignment="Top" Width="100" Height="19" Click="ModifyServerItem" IsEnabled="False"/>
+            <Button x:Name="Delete" Content="Delete" HorizontalAlignment="Left" Margin="10,328,0,0" VerticalAlignment="Top" Width="100" Height="19" Click="RemoveServerItem" IsEnabled="False"/>
+            <Button x:Name="Clear" Content="Clear" HorizontalAlignment="Left" Margin="10,352,0,0" VerticalAlignment="Top" Width="310" Height="19" Click="ClearServer" IsEnabled="False"/>
         </Grid>
         <Grid x:Name="Overlay" Background="#4B000000" Margin="0,-16,0,0" Visibility="Hidden"/>
     </Grid>

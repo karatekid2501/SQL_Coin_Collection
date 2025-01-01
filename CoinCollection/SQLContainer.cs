@@ -27,7 +27,7 @@ namespace CoinCollection
         Other,
     }
 
-    internal class SQLContainer
+    public class SQLContainer
     {
         public readonly float ServerVersion = 0.01f;
 
@@ -41,7 +41,8 @@ namespace CoinCollection
         private SqlConnection _sqlConnection;
 
         private readonly string[] _tableCreationCommands = { "CDate (Id INT IDENTITY(1,1) PRIMARY KEY, Date DATE NOT NULL)",
-            "Coin (Id INT IDENTITY(1,1) PRIMARY KEY, Name NVARCHAR(50) NOT NULL, [Original Value] MONEY NOT NULL, [Retail Value] MONEY NOT NULL, [Amount Made] INT NOT NULL, ImagePath NVARCHAR(MAX) NOT NULL DEFAULT 'No_Coin_Image.jpg', Description NVARCHAR(MAX) NOT NULL)",
+            //"Coin (Id INT IDENTITY(1,1) PRIMARY KEY, Name NVARCHAR(50) NOT NULL, [Original Value] MONEY NOT NULL, [Retail Value] MONEY NOT NULL, [Amount Made] INT NOT NULL, ImagePath NVARCHAR(MAX) NOT NULL DEFAULT 'No_Coin_Image.jpg', Description NVARCHAR(MAX) NOT NULL)",
+            "Coin (Id INT IDENTITY(1,1) PRIMARY KEY, Name NVARCHAR(50) NOT NULL, Description NVARCHAR(MAX) NOT NULL, [Amount Made] INT NOT NULL, [Currency Type] NVARCHAR(MAX) NOT NULL, [Original Value] NVARCHAR(MAX) NOT NULL, [Retail Value] NVARCHAR(MAX) NOT NULL, ImagePath NVARCHAR(MAX) NOT NULL DEFAULT 'No_Coin_Image.jpg')",
             "CoinDate (Id INT IDENTITY(1,1) PRIMARY KEY, DateId INT NOT NULL, CoinId INT NOT NULL, CONSTRAINT DateFK FOREIGN KEY (DateId) REFERENCES CDate(Id), CONSTRAINT CoinFK FOREIGN KEY (CoinId) REFERENCES Coin(Id))",
             "ServerInfo (VersionId INT IDENTITY(1,1) PRIMARY KEY, VersionNumb FLOAT NOT NULL, Description NVARCHAR(MAX), LastUpdated FLOAT NOT NULL)"};
 
@@ -279,9 +280,83 @@ namespace CoinCollection
             return (T)Convert.ChangeType(result, typeof(T));
         }
 
+        public bool CheckMoneyNameExists(string currencyName)
+        {
+            _sqlConnection.Open();
+
+            bool exists = false;
+
+            using (SqlCommand command = new($"SELECT COUNT(*) FROM Coin WHERE Name = '{currencyName}'", _sqlConnection))
+            {
+                exists = (int)command.ExecuteScalar() > 0;
+            }
+
+            _sqlConnection.Close();
+
+            return exists;
+        }
+
+        public bool SubmitNew(ServerDataContainer newData, out Exception e)
+        {
+            try
+            {
+                _sqlConnection.Open();
+
+                SqlCommand command = new($"INSERT INTO Coin VALUES {newData.CoinInfo}", _sqlConnection);
+
+                command.ExecuteNonQuery();
+
+                _sqlConnection.Close();
+
+                e = new();
+
+                return true;
+            }
+            catch (Exception foundExeption)
+            {
+                _sqlConnection.Close();
+
+                e = foundExeption;
+
+                return false;
+            }
+        }
+
+        public bool SubmitAltered(ServerDataContainer modifiedData)
+        {
+            return true;
+        }
+
+        public int ExecuteNonQuery(SqlCommand sqlCommand)
+        {
+            sqlCommand = CheckForSQLConnection(sqlCommand);
+
+            _sqlConnection.Open();
+
+            int result = sqlCommand.ExecuteNonQuery();
+
+            _sqlConnection.Close();
+
+            return result;
+        }
+
+        public object ExecuteScalar(SqlCommand sqlCommand)
+        {
+            sqlCommand = CheckForSQLConnection(sqlCommand);
+
+            _sqlConnection.Open();
+
+            object result = sqlCommand.ExecuteScalar();
+
+            _sqlConnection.Close();
+
+            return result;
+        }
+
         private static bool ReturnCheckTable(SqlConnection connect)
         {
-            return CheckTable(connect, "CDate", "Id", "Date") && CheckTable(connect, "Coin", "Id", "Name", "Original Value", "Retail Value", "Amount Made", "ImagePath", "Description") 
+            //return CheckTable(connect, "CDate", "Id", "Date") && CheckTable(connect, "Coin", "Id", "Name", "Original Value", "Retail Value", "Amount Made", "ImagePath", "Description") 
+            return CheckTable(connect, "CDate", "Id", "Date") && CheckTable(connect, "Coin", "Id", "Name", "Description", "Amount Made", "Currency Type", "Original Value", "Retail Value", "ImagePath") 
                 && CheckTable(connect, "CoinDate", "Id", "DateId", "CoinId") && CheckTable(connect, "ServerInfo", "VersionId", "VersionNumb", "Description", "LastUpdated");
         }
 
@@ -321,6 +396,26 @@ namespace CoinCollection
             MessageBox.Show($"{connect.Database} does not have {tableName}!!!", "Error");
             connect.Close();
             return false;
+        }
+
+        private SqlCommand CheckForSQLConnection(SqlCommand sqlCommand)
+        {
+            if (sqlCommand == null)
+            {
+                throw new NullReferenceException("SQLCommand is null");
+            }
+
+            if (sqlCommand.Connection == null)
+            {
+                if (_sqlConnection == null)
+                {
+                    throw new NullReferenceException("No SQL Connection in SQL command or in SQL Container!!!");
+                }
+
+                sqlCommand.Connection = _sqlConnection;
+            }
+
+            return sqlCommand;
         }
 
         private bool UpdateJsonSettingsFile(string loc)

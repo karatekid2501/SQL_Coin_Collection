@@ -17,6 +17,8 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using System.Runtime.InteropServices;
 using Microsoft.EntityFrameworkCore;
+using System.Data;
+using Microsoft.Data.SqlClient;
 
 namespace CoinCollection
 {
@@ -29,7 +31,9 @@ namespace CoinCollection
 
         private readonly SQLContainer _container;
 
-        //private Visibility _overlayVis { get { return Overlay.Visibility; } set { Overlay.Visibility = value; } }
+        private DataRowView? _dataRowView;
+
+        private ServerDataContainer? _serverDataContainer;
 
         public MainWindow() : base()
         {
@@ -49,6 +53,9 @@ namespace CoinCollection
 
             if(_container.CheckServerExistance())
             {
+                Coin_List.DisplayMemberPath = "Name";
+                Coin_List.SelectedValuePath = "Id";
+
                 UpdateTable();
             }
         }
@@ -79,6 +86,45 @@ namespace CoinCollection
         public bool NewServer(string loc)
         {
             return _container.NewServer(loc);
+        }
+
+        public bool CheckMoneyNameExists(string currencyName)
+        {
+            if(string.IsNullOrEmpty(currencyName))
+            {
+                return false;
+            }
+
+            return _container.CheckMoneyNameExists(currencyName);
+        }
+
+        public bool SubmitNew(ServerDataContainer newData, out Exception e)
+        {
+            bool done = _container.SubmitNew(newData, out e);
+
+            if (done)
+            {
+                UpdateTable();
+            }
+
+            return done;
+        }
+
+        public bool SubmitAltered(ServerDataContainer modifiedData)
+        {
+            bool done = _container.SubmitAltered(modifiedData);
+
+            if (done)
+            {
+                UpdateTable();
+            }
+
+            return done;
+        }
+
+        public object ExecuteScalar(SqlCommand sqlCommand)
+        {
+            return _container.ExecuteScalar(sqlCommand);
         }
 
         private void ShowOverlay(object? o, EventArgs e)
@@ -119,7 +165,17 @@ namespace CoinCollection
 
         private void ModifyServerItem(object sender, RoutedEventArgs e)
         {
-            App.GetInstance().GetService<DataModificationWindow>().ShowDialog(WindowStartupLocation.CenterScreen, true, DMWindowTitleName.Modify);
+            App.GetInstance().GetService<DataModificationWindow>().ShowDialog(WindowStartupLocation.CenterScreen, true, _serverDataContainer);
+        }
+
+        private void ClearServer(object sender, RoutedEventArgs e)
+        {
+            if(MessageBox.Show("Are you sure you want to clear the server, this action can not be undone?", "Clear Server", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+            {
+                _container.ExecuteNonQuery(new SQLCommandFactory().Delete().From("Coin").ToSQLCommand());
+
+                UpdateTable();
+            }
         }
 
         private void AddServerItem(object sender, RoutedEventArgs e)
@@ -127,9 +183,72 @@ namespace CoinCollection
             App.GetInstance().GetService<DataModificationWindow>().ShowDialog(WindowStartupLocation.CenterScreen, true);
         }
 
+        private void RemoveServerItem(object sender, RoutedEventArgs e)
+        {
+            if(MessageBox.Show($"Are you sure you want to delete {_dataRowView![1]} from the server", 
+                $"Delete {_dataRowView![1]}", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+            {
+                _container.ExecuteNonQuery(new SQLCommandFactory().Delete().From("Coin").Where("Name", _dataRowView![1]).ToSQLCommand());
+                UpdateTable();
+            }
+        }
+
         private void UpdateTable()
         {
             Coin_List.ItemsSource = _container.GetServerInfo().DefaultView;
+
+            Clear.IsEnabled = Coin_List.Items.Count > 0;
+            Menu_Clear.IsEnabled = Clear.IsEnabled;
+        }
+
+        private void Coin_List_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            _dataRowView = (DataRowView)Coin_List.SelectedItem;
+
+            Delete.IsEnabled = _dataRowView != null;
+            Modify.IsEnabled = _dataRowView != null;
+
+            _serverDataContainer = new(_dataRowView!);
+
+            if(_dataRowView != null)
+            {
+                ID_Coin_Label.Content = _dataRowView[0];
+                Name_Coin_Label.Content = _dataRowView[1];
+                Description_Coin_Label.Content = _dataRowView[2];
+                //TODO: Add date info
+                Amount_Made_Coin_Label.Content = _dataRowView[3];
+                Currency_Type_Coin_Label.Content = _dataRowView[4];
+                Original_Value_Coin_Label.Content = _dataRowView[5];
+                Retail_Value_Coin_Label.Content = _dataRowView[6];
+                Image_Coin_Label.Content = _dataRowView[7];
+
+                /*string imageName = Image_Coin_Label.Content.ToString()!;
+
+                BitmapImage bitmapImage = new();
+                bitmapImage.BeginInit();
+                bitmapImage.UriSource = new(Path.Combine(Path.Combine(Directory.GetCurrentDirectory(), "Images"), imageName), UriKind.RelativeOrAbsolute);
+                bitmapImage.EndInit();*/
+
+                Image_Display.Source = Misc.CreateImageFromPath(Image_Coin_Label.Content.ToString()!);
+
+                Image_Display.ToolTip = Image_Coin_Label.Content.ToString()!;
+            }
+            else
+            {
+                ID_Coin_Label.Content = "No data for coin ID";
+                Name_Coin_Label.Content = "No data for coin name";
+                Description_Coin_Label.Content = "No data for coin description";
+                //TODO: Add date info
+                Amount_Made_Coin_Label.Content = "No data for coin amount made";
+                Currency_Type_Coin_Label.Content = "No data for coin currency type";
+                Original_Value_Coin_Label.Content = "No data for coin original value";
+                Retail_Value_Coin_Label.Content = "No data for coin retail value";
+                Image_Coin_Label.Content = "No data for coin image";
+
+                //TODO: Need to test
+                Image_Display.Source = null;
+                Image_Display.ToolTip = null;
+            }
         }
     }
 }
