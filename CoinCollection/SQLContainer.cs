@@ -340,6 +340,40 @@ namespace CoinCollection
             return result;
         }
 
+        public int TryExecuteNonQuery(SqlCommand sqlCommand, out SqlException sqlEx, out Exception ex)
+        {
+            int result = -1;
+            sqlEx = null!;
+            ex = null!;
+
+            try
+            {
+                result = ExecuteNonQuery(sqlCommand);
+            }
+            catch (SqlException e)
+            {
+                sqlEx = e;
+            }
+            catch (Exception e)
+            {
+                ex = e;
+            }
+
+            _sqlConnection.Close();
+
+            return result!;
+        }
+
+        public int TryExecuteNonQuery(SqlCommand sqlCommand, out SqlException sqlEx)
+        {
+            return TryExecuteNonQuery(sqlCommand, out sqlEx, out _);
+        }
+
+        public int TryExecuteNonQuery(SqlCommand sqlCommand, out Exception ex)
+        {
+            return TryExecuteNonQuery(sqlCommand, out _, out ex);
+        }
+
         public object ExecuteScalar(SqlCommand sqlCommand)
         {
             sqlCommand = CheckForSQLConnection(sqlCommand);
@@ -351,6 +385,40 @@ namespace CoinCollection
             _sqlConnection.Close();
 
             return result;
+        }
+
+        public object TryExecuteScalar(SqlCommand sqlCommand, out SqlException sqlEx, out Exception ex)
+        {
+            object result = null!;
+            sqlEx = null!;
+            ex = null!;
+
+            try
+            {
+                result = ExecuteScalar(sqlCommand);
+            }
+            catch (SqlException e)
+            {
+                sqlEx = e;
+            }
+            catch (Exception e)
+            {
+                ex = e;
+            }
+
+            _sqlConnection.Close();
+
+            return result!;
+        }
+
+        public object TryExecuteScalar(SqlCommand sqlCommand, out SqlException sqlEx)
+        {
+            return TryExecuteScalar(sqlCommand, out sqlEx, out _);
+        }
+
+        public object TryExecuteScalar(SqlCommand sqlCommand, out Exception ex)
+        {
+            return TryExecuteScalar(sqlCommand, out _, out ex);
         }
 
         private static bool ReturnCheckTable(SqlConnection connect)

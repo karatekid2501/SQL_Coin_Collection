@@ -1,4 +1,5 @@
-﻿using Microsoft.Win32;
+﻿using Microsoft.Data.SqlClient;
+using Microsoft.Win32;
 using SixLabors.ImageSharp;
 using System;
 using System.Collections.Generic;
@@ -92,9 +93,13 @@ namespace CoinCollection
 
         public ICommand Test { get; }
 
-        private readonly string _imagePath;
+        private readonly string _imagePath = Path.Combine(Directory.GetCurrentDirectory(), "Images");
 
-        private readonly OpenFileDialog _openFileDialog;
+        private readonly OpenFileDialog _openFileDialog = new()
+        {
+            InitialDirectory = Directory.GetCurrentDirectory(),
+            Filter = "JPG (*.jpg)|*.jpg|PNG (*.png)|*.png|JPEG (*.jpeg)|*.jpeg"
+        };
 
         private readonly string _defualtImageName = "No Coin Image.jpg";
 
@@ -105,6 +110,8 @@ namespace CoinCollection
         private bool _dupeName = false;
 
         private ServerDataContainer? _serverDataContainer;
+
+        private readonly WPFExceptionsDisplay _exceptionDisplay;
 
         private static MainWindow GetMainWindow { get { return App.GetInstance().GetService<MainWindow>(); } }
 
@@ -119,8 +126,6 @@ namespace CoinCollection
 
             InitializeComponent();
 
-            _imagePath = Path.Combine(Directory.GetCurrentDirectory(), "Images");
-
             Currency_Type_ComboBox.ItemsSource = App.GetInstance().Currencies;
             Currency_Type_ComboBox.DisplayMemberPath = "CurrencyName";
             Currency_Type_ComboBox.SelectedValuePath = "CurrencyInfo";
@@ -131,17 +136,12 @@ namespace CoinCollection
 
             Calender_Date_Selector.SelectedDate = DateTime.Now;
 
-            _openFileDialog = new OpenFileDialog()
-            {
-                InitialDirectory = Directory.GetCurrentDirectory(),
-                Filter = "JPG (*.jpg)|*.jpg|PNG (*.png)|*.png|JPEG (*.jpeg)|*.jpeg"
-            };
-
             Image_Warning_Icon.Source = GetShellIcon();
             Name_Warning_Icon.Source = GetShellIcon();
-            Submit_Error_Info_Icon.Source = GetShellIcon();
 
             Name_Warning_Group.Visibility = Visibility.Hidden;
+
+            _exceptionDisplay = new(Submit_Error_Info_Group, true);
 
             UpdateCoinImages();
         }
@@ -151,6 +151,12 @@ namespace CoinCollection
             Calender_Date_Selected_Label.Content = Calender_Date_Selector.SelectedDate!.Value.ToShortDateString();
         }
 
+        /// <summary>
+        /// Opens a window and returns without waiting for the newly opened window to close.
+        /// </summary>
+        /// <param name="wsl">Start up location of the window</param>
+        /// <param name="topMost">Should the window always be on top</param>
+        /// <param name="serverDataContainer">Information about the coin that is going to be modified</param>
         public virtual void Show(WindowStartupLocation wsl, bool topMost = false, ServerDataContainer? serverDataContainer = null)
         {
             if(serverDataContainer == null)
@@ -167,6 +173,16 @@ namespace CoinCollection
             base.Show(wsl, topMost);
         }
 
+        /// <summary>
+        /// Opens a window and returns only when the newly opened window is closed.
+        /// </summary>
+        /// <param name="wsl">Start up location of the window</param>
+        /// <param name="topMost">Should the window always be on top</param>
+        /// <param name="serverDataContainer">Information about the coin that is going to be modified</param>
+        /// <returns>
+        /// A <see cref="System.Nullable"/> value of type <see cref="System.Boolean"/> that specifies whether the activity
+        /// was accepted (<see href="true"/>) or canceled (<see href="false"/>). The return value is the value of the
+        /// <see cref="System.Windows.Window.DialogResult"/> property before a window closes.</returns>
         public virtual bool? ShowDialog(WindowStartupLocation wsl, bool topMost = false, ServerDataContainer? serverDataContainer = null)
         {
             if (serverDataContainer == null)
@@ -286,40 +302,12 @@ namespace CoinCollection
                 Original_Value_ComboBox.SelectedIndex = 0;
                 Original_Value_ComboBox.ItemsSource = selectedCurrency.CurrencyInfo;
 
-                /*if(_serverDataContainer != null && IsLoaded)
-                {
-                    if (selectedCurrency.CurrencyName != _serverDataContainer[4])
-                    {
-                        Currency_Type_New.Visibility = Visibility.Visible;
-                    }
-                    else
-                    {
-                        Currency_Type_New.Visibility = Visibility.Hidden;
-                    }
-
-                    AllowToSubmit();
-                }*/
-
                 CheckModified(selectedCurrency.CurrencyName, 4, ref Currency_Type_New);
             }
         }
 
         private void Original_Value_ComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            /*if(_serverDataContainer != null && IsLoaded)
-            {
-                if (Original_Value_ComboBox.Items[Original_Value_ComboBox.SelectedIndex].ToString() != _serverDataContainer[5])
-                {
-                    Original_Value_New.Visibility = Visibility.Visible;
-                }
-                else
-                {
-                    Original_Value_New.Visibility = Visibility.Hidden;
-                }
-
-                AllowToSubmit();
-            }*/
-
             CheckModified(Original_Value_ComboBox.Items[Original_Value_ComboBox.SelectedIndex].ToString()!, 5, ref Original_Value_New);
         }
 
@@ -331,13 +319,6 @@ namespace CoinCollection
             }
 
             string imageName = Image_ComboBox.SelectedItem.ToString()!;
-
-            /*BitmapImage bitmapImage = new();
-            bitmapImage.BeginInit();
-            bitmapImage.UriSource = new(Path.Combine(_imagePath, imageName), UriKind.RelativeOrAbsolute);
-            bitmapImage.EndInit();
-
-            Image_Viwer.Source = bitmapImage;*/
 
             Image_Viwer.Source = Misc.CreateImageFromPath(imageName);
 
@@ -355,20 +336,6 @@ namespace CoinCollection
             {
                 Image_Warning_Group.Visibility= Visibility.Hidden;
             }
-
-            /*if(_serverDataContainer != null)
-            {
-                if(imageName != _serverDataContainer[7])
-                {
-                    Image_New.Visibility = Visibility.Visible;
-                }
-                else
-                {
-                    Image_New.Visibility = Visibility.Hidden;
-                }
-
-                AllowToSubmit();
-            }*/
 
             CheckModified(imageName, 7, ref Image_New);
         }
@@ -424,21 +391,58 @@ namespace CoinCollection
             else
             {
                 Submit.IsEnabled = !string.IsNullOrEmpty(Name_Textbox.Text) && !string.IsNullOrEmpty(Description_Textbox.Text) && !string.IsNullOrEmpty(Retail_Value_Textbox.Text) && !_dupeName && 
-                    (Description_New.IsVisible || Calender_New.IsVisible || Amount_Made_New.IsVisible || Currency_Type_New.IsVisible || Original_Value_New.IsVisible || Retail_Value_New.IsVisible || Image_New.IsVisible);
+                    (Name_New.IsVisible || Description_New.IsVisible || Calender_New.IsVisible || Amount_Made_New.IsVisible || Currency_Type_New.IsVisible || Original_Value_New.IsVisible || Retail_Value_New.IsVisible || Image_New.IsVisible);
             }
         }
 
         private void SubmitButton(object sender, RoutedEventArgs e)
         {
-            if(GetMainWindow.SubmitNew(new ServerDataContainer(Name_Textbox.Text, Description_Textbox.Text, Calender_Date_Selector.SelectedDate!.Value.ToShortDateString(),
-                Amount_Made_Textbox.Text, Currency_Type_ComboBox.Text, Original_Value_ComboBox.Text, Retail_Value_Textbox.Text, Image_ComboBox.Text), out Exception exeption))
+            _exceptionDisplay.Clear();
+
+            bool success;
+            Exception exception;
+            SqlException sqlException;
+
+            if (_serverDataContainer != null)
             {
-                Visibility = Visibility.Hidden;
+                success = GetMainWindow.TryExecuteNonQuery(new SQLCommandFactory().Update("Coin").Set(
+                    new SetCommand("Name", Name_Textbox.Text),
+                    new SetCommand("Description", Description_Textbox.Text),
+                    //new SetCommand(),
+                    new SetCommand("Amount Made", Amount_Made_Textbox.Text),
+                    new SetCommand("Currency Type", Currency_Type_ComboBox.Text),
+                    new SetCommand("Original Value", Original_Value_ComboBox.Text),
+                    new SetCommand("Retail Value", Retail_Value_Textbox.Text),
+                    new SetCommand("ImagePath", Image_ComboBox.Text)
+                    ).Where("Name", _serverDataContainer[0]).ToSQLCommand(), out sqlException, out exception) == 1;
             }
             else
             {
-                Submit_Error_Info_Group.Visibility = Visibility.Visible;
-                Submit_Error_Info_Label.Content = exeption.Message;
+                success = GetMainWindow.TryExecuteNonQuery(new SQLCommandFactory().Insert_Into("Coin", Name_Textbox.Text, Description_Textbox.Text, Amount_Made_Textbox.Text, 
+                    Currency_Type_ComboBox.Text, Original_Value_ComboBox.Text, Retail_Value_Textbox.Text, Image_ComboBox.Text).ToSQLCommand(), out sqlException, out exception) == 1;
+            }
+
+            if (success)
+            {
+                Visibility = Visibility.Hidden;
+                GetMainWindow.UpdateTable();
+                _exceptionDisplay.HideExceptions(true);
+            }
+            else
+            {
+                TimeOnly currentTime = TimeOnly.FromDateTime(DateTime.Now);
+
+                if (sqlException != null)
+                {
+                    _exceptionDisplay.Add(new WPFExceptionDisplayItemSQLException(sqlException, $"SQL exception: {currentTime}", Colors.Black, Colors.Red), WPFExceptionsIcons.IDI_Exclamation);
+                }
+
+                if (exception != null)
+                {
+                    _exceptionDisplay.Add(new WPFExceptionDisplayItemException(exception, $"Execption: {currentTime}", Colors.Black, Colors.Red), WPFExceptionsIcons.IDI_Exclamation);
+                }
+
+                _exceptionDisplay.ShowExceptions();
             }
         }
 
@@ -476,14 +480,15 @@ namespace CoinCollection
             e.Handled = _regex.IsMatch(e.Text);
         }
 
+        /// <summary>
+        /// Checks if the coin name already exists in the SQL server depending on if the coin information is new or being modified
+        /// </summary>
         private void DupeNameCheck()
         {
             if (_serverDataContainer != null)
             {
                 if (_serverDataContainer[0] != Name_Textbox.Text)
                 {
-                    //Debug.WriteLine((int)GetMainWindow.ExecuteScalar(new SQLCommandFactory().Select("").Count().From("Coin").Where("Name", Name_Textbox.Text).And().Not("Name", _serverDataContainer[0]).ToSQLCommand()));
-
                     _dupeName = (int)GetMainWindow.ExecuteScalar(new SQLCommandFactory().Select("").Count().From("Coin").Where("Name", Name_Textbox.Text).And().Not("Name", _serverDataContainer[0]).ToSQLCommand()) > 0;
 
                     IsDupeName();
@@ -499,8 +504,6 @@ namespace CoinCollection
             }
             else
             {
-                //Debug.WriteLine((int)GetMainWindow.ExecuteScalar(new SQLCommandFactory().Select("").Count().From("Coin").Where("Name", Name_Textbox.Text).ToSQLCommand()));
-                //_dupeName = GetMainWindow.CheckMoneyNameExists(Name_Textbox.Text);
                 _dupeName = (int)GetMainWindow.ExecuteScalar(new SQLCommandFactory().Select("").Count().From("Coin").Where("Name", Name_Textbox.Text).ToSQLCommand()) > 0;
 
                 IsDupeName();

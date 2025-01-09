@@ -1,25 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore.Metadata;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Win32;
-using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
+﻿using Microsoft.Win32;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
-using static System.Net.WebRequestMethods;
 
 namespace CoinCollection
 {
@@ -28,7 +9,7 @@ namespace CoinCollection
     /// </summary>
     public partial class ServerSelectorWindow : AdvanceWindow
     {
-        private class OpenDialogContainer<T> where T : CommonItemDialog, new()
+        /*private class OpenDialogContainer<T> where T : CommonItemDialog, new()
         {
             private readonly T _openDialog;
             private readonly MainWindowMethod _mwm;
@@ -97,17 +78,17 @@ namespace CoinCollection
             }
         }
 
-        public bool IsCancled { get; private set; } = false;
-
         private delegate bool MainWindowMethod(string loc);
 
         private readonly OpenDialogContainer<OpenFileDialog> _fileDialog;
-        private readonly OpenDialogContainer<OpenFolderDialog> _folderDialog;
+        private readonly OpenDialogContainer<OpenFolderDialog> _folderDialog;*/
 
-        public ServerSelectorWindow()
+        public bool IsCancled { get; private set; } = false;
+
+        public ServerSelectorWindow() : base(false, "!", "!")
         {
-            _fileDialog = new(this, delegate (string loc) { return App.GetInstance().GetService<MainWindow>().ExistingServer(loc); });
-            _folderDialog = new(this, delegate (string loc) { return App.GetInstance().GetService<MainWindow>().NewServer(loc); }, 128 - 9);
+            //_fileDialog = new(this, delegate (string loc) { return App.GetInstance().GetService<MainWindow>().ExistingServer(loc); });
+            //_folderDialog = new(this, delegate (string loc) { return App.GetInstance().GetService<MainWindow>().NewServer(loc); }, 128 - 9);
 
             InitializeComponent();
         }
@@ -126,19 +107,14 @@ namespace CoinCollection
 
         private void ButtonNew(object sender, RoutedEventArgs e)
         {
-            _folderDialog.Check();
+            //_folderDialog.Check();
+            Misc.FolderDialog.Check(this);
         }
 
         private void ButtonSelect(object sender, RoutedEventArgs e)
         {
-            _fileDialog.Check();
-        }
-
-        private void ButtonClose(object sender, RoutedEventArgs e)
-        {
-            //TODO Consider changing the Close_Click
-            IsCancled = true;
-            CloseWindow();
+            //_fileDialog.Check();
+            Misc.FileDialog.Check(this);
         }
     }
 }

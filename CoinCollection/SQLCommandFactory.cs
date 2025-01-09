@@ -1,4 +1,5 @@
 ﻿using Microsoft.Data.SqlClient;
+using System;
 using System.Text;
 
 namespace CoinCollection
@@ -32,6 +33,13 @@ namespace CoinCollection
         Bitwise_OR_Equals
     }
 
+    public struct SetCommand(string nameParam, object value)
+    {
+        public string NameParam { get; set; } = nameParam;
+
+        public object Value { get; set; } = value;
+    }
+
     /// <summary>
     /// Simple way to build SQL commands
     /// TODO: Finish off commands
@@ -58,8 +66,9 @@ namespace CoinCollection
             return this;
         }
 
-        public SQLCommandFactory Update()
+        public SQLCommandFactory Update(string columnName)
         {
+            _sqlCommand.Append($"UPDATE {columnName} ");
             return this;
         }
 
@@ -70,8 +79,26 @@ namespace CoinCollection
             return this;
         }
 
-        public SQLCommandFactory Insert_Into()
+        public SQLCommandFactory Insert_Into(string columnName, params string[] values)
         {
+            if(values.Length == 0)
+            {
+                throw new ArgumentException("Insert into values are not set!!!");
+            }
+
+            _sqlCommand.Append($"INSERT INTO {columnName} VALUES (");
+
+            foreach(string value in values)
+            {
+                string pName = $"@param{_sqlParameters.Count}";
+                _sqlCommand.Append($"{pName}, ");
+                _sqlParameters.Add(new SqlParameter(pName, value));
+            }
+
+            _sqlCommand.Remove(_sqlCommand.Length - 2, 2);
+
+            _sqlCommand.Append(") ");
+
             return this;
         }
 
@@ -255,6 +282,22 @@ namespace CoinCollection
 
         public SQLCommandFactory With()
         {
+            return this;
+        }
+
+        public SQLCommandFactory Set(params SetCommand[] setInfo)
+        {
+            _sqlCommand.Append("SET ");
+
+            foreach (SetCommand item in setInfo)
+            {
+                string pName = $"@param{_sqlParameters.Count}";
+                _sqlCommand.Append($"[{item.NameParam}] = {pName}, ");
+                _sqlParameters.Add(new (pName, item.Value));
+            }
+
+            _sqlCommand.Remove(_sqlCommand.Length - 2, 1);
+
             return this;
         }
 

@@ -122,9 +122,44 @@ namespace CoinCollection
             return done;
         }
 
+        public int ExecuteNonQuery(SqlCommand sqlCommand)
+        {
+            return _container.ExecuteNonQuery(sqlCommand);
+        }
+
+        public int TryExecuteNonQuery(SqlCommand sqlCommand, out SqlException sqlEx, out Exception ex)
+        {
+            return _container.TryExecuteNonQuery(sqlCommand, out sqlEx, out ex);
+        }
+
+        public int TryExecuteNonQuery(SqlCommand sqlCommand, out SqlException sqlEx)
+        {
+            return _container.TryExecuteNonQuery(sqlCommand, out sqlEx, out _);
+        }
+
+        public int TryExecuteNonQuery(SqlCommand sqlCommand, out Exception ex)
+        {
+            return _container.TryExecuteNonQuery(sqlCommand, out _, out ex);
+        }
+
         public object ExecuteScalar(SqlCommand sqlCommand)
         {
             return _container.ExecuteScalar(sqlCommand);
+        }
+
+        public object TryExecuteScalar(SqlCommand sqlCommand, out SqlException sqlEx, out Exception ex)
+        {
+            return _container.TryExecuteScalar(sqlCommand, out sqlEx, out ex);
+        }
+
+        public object TryExecuteScalar(SqlCommand sqlCommand, out SqlException sqlEx)
+        {
+            return _container.TryExecuteScalar(sqlCommand, out sqlEx, out _);
+        }
+
+        public object TryExecuteScalar(SqlCommand sqlCommand, out Exception ex)
+        {
+            return _container.TryExecuteScalar(sqlCommand, out _, out ex);
         }
 
         private void ShowOverlay(object? o, EventArgs e)
@@ -165,7 +200,7 @@ namespace CoinCollection
 
         private void ModifyServerItem(object sender, RoutedEventArgs e)
         {
-            App.GetInstance().GetService<DataModificationWindow>().ShowDialog(WindowStartupLocation.CenterScreen, true, _serverDataContainer);
+            App.GetInstance().GetService<DataModificationWindow>().ShowDialog(WindowStartupLocation.CenterScreen, false, _serverDataContainer);
         }
 
         private void ClearServer(object sender, RoutedEventArgs e)
@@ -180,7 +215,7 @@ namespace CoinCollection
 
         private void AddServerItem(object sender, RoutedEventArgs e)
         {
-            App.GetInstance().GetService<DataModificationWindow>().ShowDialog(WindowStartupLocation.CenterScreen, true);
+            App.GetInstance().GetService<DataModificationWindow>().ShowDialog(WindowStartupLocation.CenterScreen);
         }
 
         private void RemoveServerItem(object sender, RoutedEventArgs e)
@@ -193,7 +228,7 @@ namespace CoinCollection
             }
         }
 
-        private void UpdateTable()
+        public void UpdateTable()
         {
             Coin_List.ItemsSource = _container.GetServerInfo().DefaultView;
 
@@ -221,13 +256,6 @@ namespace CoinCollection
                 Original_Value_Coin_Label.Content = _dataRowView[5];
                 Retail_Value_Coin_Label.Content = _dataRowView[6];
                 Image_Coin_Label.Content = _dataRowView[7];
-
-                /*string imageName = Image_Coin_Label.Content.ToString()!;
-
-                BitmapImage bitmapImage = new();
-                bitmapImage.BeginInit();
-                bitmapImage.UriSource = new(Path.Combine(Path.Combine(Directory.GetCurrentDirectory(), "Images"), imageName), UriKind.RelativeOrAbsolute);
-                bitmapImage.EndInit();*/
 
                 Image_Display.Source = Misc.CreateImageFromPath(Image_Coin_Label.Content.ToString()!);
 

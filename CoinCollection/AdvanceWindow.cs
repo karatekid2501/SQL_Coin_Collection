@@ -136,6 +136,8 @@ namespace CoinCollection
         protected readonly string _restoreIcon = "\uE923";
 
         private Button? _maximize;
+        private Button? _minimize;
+        private Button? _close;
 
         private readonly string _maximizeName;
         private readonly string _minimizeName;
@@ -143,26 +145,29 @@ namespace CoinCollection
 
         private readonly bool _reuseClose = false;
 
+        private readonly string _childClassName = "Unknown";
+
         /// <summary>
         /// Constructor for the AdvanceWindow class
         /// </summary>
         /// <param name="reuseClose">Reuse the window when its closed</param>
-        /// <param name="maximizeName">Name of the maximum button</param>
-        /// <param name="minimizeName">Name of the minimise button</param>
-        /// <param name="closeName">Name of the close button</param>
-        public AdvanceWindow(bool reuseClose = false, string maximizeName = "Maximize", string minimizeName = "minimize", string closeName = "Close") : base()
+        /// <param name="maximizeName">Name of the maximum button (Use '!' to not to use this button)</param>
+        /// <param name="minimizeName">Name of the minimise button (Use '!' to not to use this button</param>
+        /// <param name="closeName">Name of the close button (Use '!' to not to use this button</param>
+        public AdvanceWindow(bool reuseClose = false, string maximizeName = "Maximize", string minimizeName = "Minimize", string closeName = "Close") : base()
         {
-            //TODO: Fix issue with minimize name not capitalised
-
             Loaded += OnLoad;
             SourceInitialized += SourceInit;
             StateChanged += ChangeSize;
+            Activated += WindowActivate;
             
             _reuseClose = reuseClose;
 
             _maximizeName = maximizeName;
             _minimizeName = minimizeName;
             _closeName = closeName;
+
+            _childClassName = GetType().Name;
         }
 
         protected override void OnClosed(EventArgs e)
@@ -170,6 +175,7 @@ namespace CoinCollection
             Loaded -= OnLoad;
             SourceInitialized -= SourceInit;
             StateChanged -= ChangeSize;
+            Activated -= WindowActivate;
 
             base.OnClosed(e);
         }
@@ -200,6 +206,14 @@ namespace CoinCollection
             WindowStartupLocation = wsl;
             Topmost = topMost;
             return ShowDialog();
+        }
+
+        public virtual void WindowActivate(object? sender, EventArgs e)
+        {
+            if(!Topmost)
+            {
+                Focus();
+            }
         }
 
         protected virtual void Minimize_Click(object sender, RoutedEventArgs e)
@@ -255,6 +269,8 @@ namespace CoinCollection
         private void OnLoad(object sender, RoutedEventArgs e)
         {
             FindButton(_maximizeName, ref _maximize!);
+            FindButton(_minimizeName, ref _minimize!);
+            FindButton(_closeName, ref _close!);
         }
 
         /// <summary>
@@ -264,6 +280,11 @@ namespace CoinCollection
         /// <param name="button">Reference to the button value to store the found button</param>
         private void FindButton(string buttonName, ref Button button, [CallerArgumentExpression(nameof(buttonName))] string parameterName = "Name not found!!!", [CallerLineNumber] int lineNumb = -1)
         {
+            if(buttonName == "!")
+            {
+                return;
+            }
+
             if (string.IsNullOrEmpty(buttonName))
             {
                 Debug.WriteLine($"{parameterName} parameter, called at {lineNumb}, is empty!!!");
@@ -274,7 +295,7 @@ namespace CoinCollection
 
             if (temp == null)
             {
-                Debug.WriteLine($"{buttonName} does not exist!!!");
+                Debug.WriteLine($"{buttonName} does not exist in {_childClassName}!!!");
             }
             else if (temp is not Button)
             {

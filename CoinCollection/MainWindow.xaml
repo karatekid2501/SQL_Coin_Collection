@@ -15,7 +15,7 @@
             <StackPanel Height="20" WindowChrome.IsHitTestVisibleInChrome="True" VerticalAlignment="Center" HorizontalAlignment="Right" Orientation="Horizontal">
                 <Button x:Name="Minimize" Click="Minimize_Click" Width="20" FontFamily="Segoe MDL2 Assets" FontSize="16" Content="&#xE921;"/>
                 <Button x:Name="Maximize" Click="Maximize_Click" Width="20" FontFamily="Segoe MDL2 Assets" FontSize="16" Content="&#xE922;"/>
-                <Button x:Name="Exit" Click="Close_Click" Width="20" FontFamily="Segoe MDL2 Assets" FontSize="16" Content="&#xE8BB;"/>
+                <Button x:Name="Close" Click="Close_Click" Width="20" FontFamily="Segoe MDL2 Assets" FontSize="16" Content="&#xE8BB;"/>
             </StackPanel>
         </Grid>
         <Grid HorizontalAlignment="Stretch" VerticalAlignment="Top" Height="430" Margin="0,20,0,0">
