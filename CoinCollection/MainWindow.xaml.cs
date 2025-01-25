@@ -1,22 +1,5 @@
-﻿using System.Text;
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-//using System.Windows.Shapes;
-using System.Configuration;
-using Microsoft.Extensions.Configuration;
-using CoinCollection.Models;
-using System.IO;
-using System.Diagnostics;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.DependencyInjection;
-using System.Runtime.InteropServices;
-using Microsoft.EntityFrameworkCore;
 using System.Data;
 using Microsoft.Data.SqlClient;
 
@@ -45,6 +28,27 @@ namespace CoinCollection
             App.GetInstance().GetService<DataModificationWindow>().IsVisibleChanged += DMWIsVisableChanged;
 
             _container = new();
+
+            Enable_Reporting.IsChecked = App.GetInstance().ConfigEditor.Get<bool>("Enabled", "Report Settings");
+
+            Ensable_Reporting(Enable_Reporting.IsChecked);
+
+            string reportFrequncy = App.GetInstance().ConfigEditor.Get<string>("Report Frequency", "Report Settings");
+
+            switch(reportFrequncy)
+            {
+                case "Daily":
+                    RFCF_Daily.IsChecked = true;
+                    break;
+                case "Weekly":
+                    RFCF_Weekly.IsChecked = true;
+                    break;
+                case "Monthly":
+                    RFCF_Monthly.IsChecked = true;
+                    break;
+                default:
+                    throw new Exception($"{reportFrequncy} is not a frequency type!!!");
+            }
         }
 
         public override void Show(WindowStartupLocation wsl, bool topMost = false)
@@ -276,6 +280,89 @@ namespace CoinCollection
                 //TODO: Need to test
                 Image_Display.Source = null;
                 Image_Display.ToolTip = null;
+            }
+        }
+
+        private void RFCF_Checked(object sender, RoutedEventArgs e)
+        {
+            if(sender is MenuItem menu)
+            {
+                if(menu.Name.Contains("RFCF"))
+                {
+                    CheckRFCF(menu.Name);
+
+                    if(IsLoaded)
+                    {
+                        App.GetInstance().ConfigEditor.UpdateConfigFile();
+                        App.GetInstance().ConfigWait.WaitOne();
+                        App.GetInstance().Report.UpdateReportFrequency();
+                    }
+                }
+            }
+        }
+
+        private void CheckRFCF(string menuName)
+        {
+            switch(menuName)
+            {
+                case "RFCF_Daily":
+                    App.GetInstance().ConfigEditor.Set("Report Frequency", "Daily", "Report Settings");
+                    RFCF_Weekly.IsChecked = false;
+                    RFCF_Monthly.IsChecked = false;
+                    break;
+                case "RFCF_Weekly":
+                    App.GetInstance().ConfigEditor.Set("Report Frequency", "Weekly", "Report Settings");
+                    RFCF_Daily.IsChecked = false;
+                    RFCF_Monthly.IsChecked = false;
+                    break;
+                case "RFCF_Monthly":
+                    App.GetInstance().ConfigEditor.Set("Report Frequency", "Monthly", "Report Settings");
+                    RFCF_Daily.IsChecked = false;
+                    RFCF_Weekly.IsChecked = false;
+                    break;
+            }
+        }
+
+        private void Enable_Reporting_Checked(object sender, RoutedEventArgs e)
+        {
+            Ensable_Reporting(true);
+        }
+
+        private void Enable_Reporting_Unchecked(object sender, RoutedEventArgs e)
+        {
+            Ensable_Reporting(false);
+        }
+
+        private void RFCF_Unchecked(object sender, RoutedEventArgs e)
+        {
+            if(RFCF_Daily.IsChecked == false && RFCF_Weekly.IsChecked == false && RFCF_Monthly.IsChecked == false)
+            {
+                RFCF_Daily.IsChecked = true;
+            }
+        }
+
+        private void Ensable_Reporting(bool enable)
+        {
+            RFCF_Daily.IsEnabled = enable;
+            RFCF_Weekly.IsEnabled = enable;
+            RFCF_Monthly.IsEnabled = enable;
+
+            if(IsLoaded)
+            {
+                App.GetInstance().ConfigEditor.Set("Enabled", enable, "Report Settings");
+                App.GetInstance().ConfigEditor.UpdateConfigFile();
+                App.GetInstance().ConfigWait.WaitOne();
+
+                if (enable)
+                {
+                    App.GetInstance().Report.IsEnabled = enable;
+                    App.GetInstance().Report.AddReport("Report is enabled", ReportSeverity.Warning);
+                }
+                else
+                {
+                    App.GetInstance().Report.AddReport("Report is disabled", ReportSeverity.Warning);
+                    App.GetInstance().Report.IsEnabled = enable;
+                }
             }
         }
     }

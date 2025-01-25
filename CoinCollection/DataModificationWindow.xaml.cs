@@ -91,8 +91,6 @@ namespace CoinCollection
         public ICommand DeselectCommand { get; }
         public ICommand DeselectCheckCurrencyNameCommand { get; }
 
-        public ICommand Test { get; }
-
         private readonly string _imagePath = Path.Combine(Directory.GetCurrentDirectory(), "Images");
 
         private readonly OpenFileDialog _openFileDialog = new()
@@ -117,10 +115,8 @@ namespace CoinCollection
 
         public DataModificationWindow() : base(true)
         {
-            DeselectCommand = new RelayCommand(Deselect);
+            DeselectCommand = new RelayCommand<TextBoxCommand>(DeselectTextBox);
             DeselectCheckCurrencyNameCommand = new RelayCommand(DeselectCheckCurrencyName);
-
-            Test = new RelayCommand<TextBoxCommand>(DeselectTextBox);
 
             DataContext = this;
 
@@ -424,6 +420,15 @@ namespace CoinCollection
 
             if (success)
             {
+                Name_New.Visibility = Visibility.Hidden;
+                Description_New.Visibility = Visibility.Hidden;
+                Calender_New.Visibility = Visibility.Hidden;
+                Amount_Made_New.Visibility = Visibility.Hidden;
+                Currency_Type_New.Visibility = Visibility.Hidden;
+                Original_Value_New.Visibility = Visibility.Hidden;
+                Retail_Value_New.Visibility = Visibility.Hidden;
+                Image_New.Visibility = Visibility.Hidden;
+
                 Visibility = Visibility.Hidden;
                 GetMainWindow.UpdateTable();
                 _exceptionDisplay.HideExceptions(true);

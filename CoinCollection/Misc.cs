@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media.Imaging;
@@ -84,8 +85,42 @@ namespace CoinCollection
 
         public delegate bool MainWindowMethod(string loc);
 
-        public static readonly OpenDialogContainer<OpenFileDialog> FileDialog = new(delegate (string loc) { return App.GetInstance().GetService<MainWindow>().ExistingServer(loc); });
-        public static readonly OpenDialogContainer<OpenFolderDialog> FolderDialog = new(delegate (string loc) { return App.GetInstance().GetService<MainWindow>().NewServer(loc); }, 128 - 9);
+        public static readonly OpenDialogContainer<OpenFileDialog> FileDialog = new(delegate (string loc) { 
+            bool success = App.GetInstance().GetService<MainWindow>().ExistingServer(loc);
+
+            int serverNamePos = loc.LastIndexOf('\\');
+            string report = $"{loc[(serverNamePos + 1)..]} at {loc[..serverNamePos]}";
+
+            if (success) 
+            {
+                App.GetInstance().Report.AddReport($"Successfully got {report}", ReportSeverity.Info);
+                return true;
+            }
+            else
+            {
+                App.GetInstance().Report.AddReport($"Unable to get {report}", ReportSeverity.Error);
+                return false;
+            }
+        });
+
+        public static readonly OpenDialogContainer<OpenFolderDialog> FolderDialog = new(delegate (string loc) {
+            bool success = App.GetInstance().GetService<MainWindow>().NewServer(loc);
+
+            int serverNamePos = loc.LastIndexOf('\\');
+            string report = $"Creation of {loc[(serverNamePos + 1)..]} at {loc[..serverNamePos]}";
+
+            if(success)
+            {
+                App.GetInstance().Report.AddReport($"{report} was a success", ReportSeverity.Info);
+                return true;
+            }
+            else
+            {
+                App.GetInstance().Report.AddReport($"{report} failed", ReportSeverity.Error);
+                return false;
+            }
+
+        }, 128 - 9);
 
         //Hard coded path for the image folder location
         private static readonly string _imagePath = Path.Combine(Directory.GetCurrentDirectory(), "Images");

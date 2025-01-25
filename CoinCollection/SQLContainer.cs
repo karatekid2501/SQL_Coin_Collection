@@ -1,22 +1,9 @@
 ﻿using CoinCollection.Models;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using System;
-using System.Collections.Generic;
 using System.Data;
-using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Text.Json;
-using System.Text.Json.Nodes;
-using System.Threading.Tasks;
 using System.Windows;
-using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 
 namespace CoinCollection
 {
@@ -104,7 +91,9 @@ namespace CoinCollection
                 if(_currentErrorTrys == _errorTrys)
                 {
                     _currentErrorTrys = 0;
-                    MessageBox.Show($"Too many attempts to fix error ({ex.Message})!!!");
+                    //MessageBox.Show($"Too many attempts to fix error ({ex.Message})!!!");
+
+                    App.GetInstance().Report.ShowMessage($"Too many attempts to fix error ({ex.Message})", "Warning", ReportSeverity.Warning);
                     return false;
                 }
 
@@ -126,7 +115,10 @@ namespace CoinCollection
                         {
                             if(!clearServerErrorCode.Message.Contains("Unable to open the physical file"))
                             {
-                                MessageBox.Show(clearServerErrorCode.Message);
+                                //MessageBox.Show(clearServerErrorCode.Message);
+
+                                App.GetInstance().Report.ShowMessage(clearServerErrorCode, "Warning", ReportSeverity.Warning);
+
                                 return false;
                             }
                         }
@@ -136,7 +128,10 @@ namespace CoinCollection
                 }
                 else
                 {
-                    MessageBox.Show(ex.Message);
+                    //MessageBox.Show(ex.Message);
+
+                    App.GetInstance().Report.ShowMessage(ex, "Warning", ReportSeverity.Warning);
+
                     return false;
                 }
             }
@@ -161,15 +156,19 @@ namespace CoinCollection
             }
             catch (SqlException ex)
             {
-                Debug.WriteLine($"SQL error: {ex.Message}");
-                MessageBox.Show(ex.Message, "SQL Error");
+                //Debug.WriteLine($"SQL error: {ex.Message}");
+                //MessageBox.Show(ex.Message, "SQL Error");
+
+                App.GetInstance().Report.ShowMessage(ex, "Warning", ReportSeverity.Warning);
 
                 error = SQLError.SQL;
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"General error: {ex.Message}");
-                MessageBox.Show(ex.Message, "Error");
+                //Debug.WriteLine($"General error: {ex.Message}");
+                //MessageBox.Show(ex.Message, "Error");
+
+                App.GetInstance().Report.ShowMessage(ex, "Warning", ReportSeverity.Warning);
 
                 error = SQLError.Other;
             }
@@ -327,6 +326,11 @@ namespace CoinCollection
             return true;
         }
 
+        /// <summary>
+        /// Executes a Transact-SQL statement againts the connection and returns the number of rows affected
+        /// </summary>
+        /// <param name="sqlCommand">The SQL command that will be executed</param>
+        /// <returns>The number of rows that are affected</returns>
         public int ExecuteNonQuery(SqlCommand sqlCommand)
         {
             sqlCommand = CheckForSQLConnection(sqlCommand);
@@ -340,6 +344,13 @@ namespace CoinCollection
             return result;
         }
 
+        /// <summary>
+        /// Tries to execute a Transact-SQL statement againts the connection and returns the number of rows affected
+        /// </summary>
+        /// <param name="sqlCommand">The SQL command that will be executed</param>
+        /// <param name="sqlEx">The SQL exeption that is thrown if something goes wrong</param>
+        /// <param name="ex">The execption that is thrown if something goes wrong</param>
+        /// <returns>The number of rows that are affected</returns>
         public int TryExecuteNonQuery(SqlCommand sqlCommand, out SqlException sqlEx, out Exception ex)
         {
             int result = -1;
@@ -364,16 +375,33 @@ namespace CoinCollection
             return result!;
         }
 
+        /// <summary>
+        /// Tries to execute a Transact-SQL statement againts the connection and returns the number of rows affected
+        /// </summary>
+        /// <param name="sqlCommand">The SQL command that will be executed</param>
+        /// <param name="sqlEx">The SQL exeption that is thrown if something goes wrong</param>
+        /// <returns>The number of rows that are affected</returns>
         public int TryExecuteNonQuery(SqlCommand sqlCommand, out SqlException sqlEx)
         {
             return TryExecuteNonQuery(sqlCommand, out sqlEx, out _);
         }
 
+        /// <summary>
+        /// Tries to execute a Transact-SQL statement againts the connection and returns the number of rows affected
+        /// </summary>
+        /// <param name="sqlCommand">The SQL command that will be executed</param>
+        /// <param name="ex">The execption that is thrown if something goes wrong</param>
+        /// <returns>The number of rows that are affected</returns>
         public int TryExecuteNonQuery(SqlCommand sqlCommand, out Exception ex)
         {
             return TryExecuteNonQuery(sqlCommand, out _, out ex);
         }
 
+        /// <summary>
+        /// Executes the query, and returns the first column of the first row in the result set returned by the query. Additional columns or rows are ignored
+        /// </summary>
+        /// <param name="sqlCommand">The SQL command that will be executed</param>
+        /// <returns>The first column of the first row in the result, or null reference if the result set is empty. Returns a maximum of 2033 characters</returns>
         public object ExecuteScalar(SqlCommand sqlCommand)
         {
             sqlCommand = CheckForSQLConnection(sqlCommand);
@@ -387,6 +415,13 @@ namespace CoinCollection
             return result;
         }
 
+        /// <summary>
+        /// Trys to execute the query, and returns the first column of the first row in the result set returned by the query. Additional columns or rows are ignored
+        /// </summary>
+        /// <param name="sqlCommand">The SQL command that will be executed</param>
+        /// <param name="sqlEx">The SQL exeption that is thrown if something goes wrong</param>
+        /// <param name="ex">The execption that is thrown if something goes wrong</param>
+        /// <returns>The first column of the first row in the result, or null reference if the result set is empty. Returns a maximum of 2033 characters</returns>
         public object TryExecuteScalar(SqlCommand sqlCommand, out SqlException sqlEx, out Exception ex)
         {
             object result = null!;
@@ -411,11 +446,23 @@ namespace CoinCollection
             return result!;
         }
 
+        /// <summary>
+        /// Trys to execute the query, and returns the first column of the first row in the result set returned by the query. Additional columns or rows are ignored
+        /// </summary>
+        /// <param name="sqlCommand">The SQL command that will be executed</param>
+        /// <param name="sqlEx">The SQL exeption that is thrown if something goes wrong</param>
+        /// <returns>The first column of the first row in the result, or null reference if the result set is empty. Returns a maximum of 2033 characters</returns>
         public object TryExecuteScalar(SqlCommand sqlCommand, out SqlException sqlEx)
         {
             return TryExecuteScalar(sqlCommand, out sqlEx, out _);
         }
 
+        /// <summary>
+        /// Trys to execute the query, and returns the first column of the first row in the result set returned by the query. Additional columns or rows are ignored
+        /// </summary>
+        /// <param name="sqlCommand">The SQL command that will be executed</param>
+        /// <param name="ex">The execption that is thrown if something goes wrong</param>
+        /// <returns>The first column of the first row in the result, or null reference if the result set is empty. Returns a maximum of 2033 characters</returns>
         public object TryExecuteScalar(SqlCommand sqlCommand, out Exception ex)
         {
             return TryExecuteScalar(sqlCommand, out _, out ex);
@@ -450,7 +497,10 @@ namespace CoinCollection
 
                         if((int)command.ExecuteScalar() == 0)
                         {
-                            MessageBox.Show($"{connect.Database} does not have {colomName} colom in {tableName}!!!", "Error");
+                            //MessageBox.Show($"{connect.Database} does not have {colomName} colom in {tableName}!!!", "Error");
+                            
+                            App.GetInstance().Report.ShowMessage($"{connect.Database} does not have {colomName} colom in {tableName}", "Warning", ReportSeverity.Warning);
+
                             connect.Close();
                             return false;
                         }
@@ -461,7 +511,10 @@ namespace CoinCollection
                 return true;
             }
 
-            MessageBox.Show($"{connect.Database} does not have {tableName}!!!", "Error");
+            //MessageBox.Show($"{connect.Database} does not have {tableName}!!!", "Error");
+            
+            App.GetInstance().Report.ShowMessage($"{connect.Database} does not have {tableName}", "Warning", ReportSeverity.Warning);
+
             connect.Close();
             return false;
         }
@@ -493,7 +546,8 @@ namespace CoinCollection
                 return false;
             }
 
-            var json = JsonNode.Parse(File.ReadAllText(Path.Combine(Directory.GetCurrentDirectory(), "appsettings.json")));
+            //TODO: Sort out JSON stuff
+            /*var json = JsonNode.Parse(File.ReadAllText(Path.Combine(Directory.GetCurrentDirectory(), "appsettings.json")));
 
             if (json != null)
             {
@@ -515,23 +569,46 @@ namespace CoinCollection
             }
             else
             {
-                MessageBox.Show("Unable to open appsettings!!!");
+                //MessageBox.Show("Unable to open appsettings!!!");
 
+                App.GetInstance().Report.ShowMessage("Unable to open appsettings", "Warning", ReportSeverity.Warning);
                 App.GetInstance().GetService<ServerSelectorWindow>().CloseWindow();
 
                 return false;
             }
 
-            File.WriteAllText(Path.Combine(Directory.GetCurrentDirectory(), "appsettings.json"), json.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
+            File.WriteAllText(Path.Combine(Directory.GetCurrentDirectory(), "appsettings.json"), json.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));*/
 
-            //App.GetInstance().UpdateAppSettings();
-            App.GetInstance().ConfigWait.WaitOne();
+            App appInstance = App.GetInstance();
 
-            _sqlConnection.ConnectionString = App.GetInstance().ConnectionString;
+            if(appInstance.ConfigEditor.ConfigFileExist)
+            {
+                if (!appInstance.ConfigEditor.Set("SQL Dir", loc) || !appInstance.ConfigEditor.Set("DefaultConnection", $"Data Source=(LocalDB)\\MSSQLLocalDB;AttachDbFilename={loc};Integrated Security=True;Connect Timeout=30", "ConnectionStrings"))
+                {
+                    appInstance.GetService<ServerSelectorWindow>().CloseWindow();
+                    return false;
+                }
+            }
+            else
+            {
+                appInstance.Report.ShowMessage("Unable to open appsettings", "Warning", ReportSeverity.Warning);
+                appInstance.GetService<ServerSelectorWindow>().CloseWindow();
+
+                return false;
+            }
+
+            appInstance.ConfigEditor.UpdateConfigFile();
+
+            //App.GetInstance().ConfigWait.WaitOne();
+            appInstance.ConfigWait.WaitOne();
+
+            //_sqlConnection.ConnectionString = App.GetInstance().ConnectionString;
+            _sqlConnection.ConnectionString = appInstance.ConnectionString;
 
             var optionsBuilder = new DbContextOptionsBuilder<LocalDBMSSQLLocalDBContext>();
 
-            optionsBuilder.UseSqlServer(App.GetInstance().ConnectionString);
+            //optionsBuilder.UseSqlServer(App.GetInstance().ConnectionString);
+            optionsBuilder.UseSqlServer(appInstance.ConnectionString);
 
             _localDBContext = new(optionsBuilder.Options);
 

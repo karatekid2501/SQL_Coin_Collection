@@ -4,10 +4,16 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Primitives;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.IO;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Windows;
+using System.Windows.Threading;
+
+#if DEBUG
+using System.Runtime.ExceptionServices;
+#endif
 
 namespace CoinCollection
 {
@@ -30,6 +36,10 @@ namespace CoinCollection
 
         public readonly ManualResetEvent ConfigWait;
 
+        public readonly JsonConfigEditor ConfigEditor;
+
+        public readonly SQLReportingSystem Report;
+
         private readonly IHost _host;
 
         private readonly IChangeToken _configToken;
@@ -47,7 +57,20 @@ namespace CoinCollection
                 throw new InvalidOperationException("Instance of App already exists");
             }
 
+            ConfigEditor = new JsonConfigEditor(string.Empty, new JsonSerializerOptions { WriteIndented = true });
+
+            Current.DispatcherUnhandledException += UnhandleExceptions;
+            AppDomain.CurrentDomain.UnhandledException += UnhandleExceptions;
+
+            #if DEBUG
+
+            AppDomain.CurrentDomain.FirstChanceException += FirstChanceException;
+
+            #endif
+
             CheckAppSettingsExist();
+
+            Report = new SQLReportingSystem(string.Empty, ConfigEditor.Get<bool>("Enabled", "Report Settings"));
 
             //Adds the defualt currency type Unknown
             _currencies.Add(new());
@@ -92,6 +115,7 @@ namespace CoinCollection
         {
             if (_instance == null)
             {
+                //TODO: Sort out
                 throw new InvalidOperationException("Instance of App already exists");
             }
             else
@@ -123,6 +147,17 @@ namespace CoinCollection
 
         protected override async void OnExit(ExitEventArgs e)
         {
+            Report.AddReport($"----------File Closed----------");
+
+            Current.DispatcherUnhandledException -= UnhandleExceptions;
+            AppDomain.CurrentDomain.UnhandledException -= UnhandleExceptions;
+
+            #if DEBUG
+
+            AppDomain.CurrentDomain.FirstChanceException -= FirstChanceException;
+
+            #endif
+
             await _host.StopAsync();
             base.OnExit(e);
         }
@@ -130,25 +165,63 @@ namespace CoinCollection
         /// <summary>
         /// Checks if the settings file exists and generates a new settings file if one is not present
         /// </summary>
-        private static void CheckAppSettingsExist()
+        private void CheckAppSettingsExist()
         {
-            if(!File.Exists(Path.Combine(Directory.GetCurrentDirectory(), "appsettings.json")))
+            //if (!File.Exists(Path.Combine(Directory.GetCurrentDirectory(), "appsettings.json")))
+            if (!ConfigEditor.ConfigFileExist)
             {
                 //TODO: Fix issue when trying to display messagebox before IHost is created
                 //MessageBox.Show("No settings file exists, creating new one!!!", "Warning", MessageBoxButton.OK);
 
-                JsonObject jObject = new()
+                /*JsonObject jObject = new()
                 {
                     ["ConnectionStrings"] = new JsonObject
                     {
                         ["DefaultConnection"] = string.Empty
                     },
 
-                    ["SQL Dir"] = string.Empty
+                    ["SQL Dir"] = string.Empty,
+
+                    ["Report Settings"] = new JsonObject
+                    {
+                        ["Enabled"] = true,
+                        ["Report Frequency"] = "Daily"
+                    }
                 };
 
-                File.WriteAllText(Path.Combine(Directory.GetCurrentDirectory(), "appsettings.json"), jObject.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
+                File.WriteAllText(Path.Combine(Directory.GetCurrentDirectory(), "appsettings.json"), jObject.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));*/
+
+                ConfigEditor.Create(true,
+                    new JsonValueEditGroup("ConnectionStrings", new JsonValueEdit<string>("DefaultConnection", string.Empty)),
+                    new JsonValueEditGroupSingles(new JsonValueEdit<string>("SQL Dir", string.Empty)),
+                    new JsonValueEditGroup("Report Settings", new JsonValueEdit<bool>("Enabled", true),
+                        new JsonValueEdit<string>("Report Frequency", "Daily")));
             }
         }
+
+        private void UnhandleExceptions(object sender, DispatcherUnhandledExceptionEventArgs args)
+        {
+            UnhandleExceptions(args.Exception);
+            args.Handled = true;
+        }
+
+        private void UnhandleExceptions(object sender, UnhandledExceptionEventArgs args)
+        {
+            UnhandleExceptions((Exception)args.ExceptionObject);
+        }
+
+        private void UnhandleExceptions(Exception ex)
+        {
+            Report.AddReport($"Unhandled exception: {ex.Message}", ReportSeverity.Error);
+        }
+
+        #if DEBUG
+
+        private void FirstChanceException(object? sender, FirstChanceExceptionEventArgs args)
+        {
+            Report.AddReport($"Debug exception: {args.Exception.Message}", ReportSeverity.Error);
+        }
+
+        #endif
     }
 }

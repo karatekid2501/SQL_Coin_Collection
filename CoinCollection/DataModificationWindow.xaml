@@ -52,7 +52,7 @@
                 <Label x:Name="Description_New" Content="*" FontSize="20" VerticalAlignment="Top" HorizontalAlignment="Center" Margin="5,0,0,0" Visibility="Hidden"/>
                 <TextBox x:Name="Description_Textbox" TextWrapping="Wrap" Width="270" Height="100" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="24,0,0,0" LostFocus="LostFocusTextBoxEvent">
                     <TextBox.InputBindings>
-                        <KeyBinding Key="Esc" Command="{Binding Test}">
+                        <KeyBinding Key="Esc" Command="{Binding DeselectCommand}">
                             <KeyBinding.CommandParameter>
                                 <MultiBinding Converter="{StaticResource TBCommandConvert}">
                                     <Binding ElementName="Description_Textbox" Path="Text"/>
@@ -79,7 +79,7 @@
                 <Label x:Name="Amount_Made_New" Content="*" FontSize="20" VerticalAlignment="Top" HorizontalAlignment="Center" Margin="5,0,0,0" Visibility="Hidden"/>
                 <TextBox x:Name="Amount_Made_Textbox" TextWrapping="Wrap" Width="120" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="8,0,0,0" LostFocus="LostFocusTextBoxEvent" PreviewTextInput="IsTextAllowed">
                     <TextBox.InputBindings>
-                        <KeyBinding Key="Esc" Command="{Binding Test}">
+                        <KeyBinding Key="Esc" Command="{Binding DeselectCommand}">
                             <KeyBinding.CommandParameter>
                                 <MultiBinding Converter="{StaticResource TBCommandConvert}">
                                     <Binding ElementName="Amount_Made_Textbox" Path="Text"/>
@@ -110,7 +110,7 @@
                 <Label x:Name="Retail_Value_New" Content="*" FontSize="20" VerticalAlignment="Top" HorizontalAlignment="Center" Margin="5,0,0,0" Visibility="Hidden"/>
                 <TextBox x:Name="Retail_Value_Textbox" TextWrapping="Wrap" Width="120" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="23,0,0,0" LostFocus="LostFocusTextBoxEvent" PreviewTextInput="IsTextAllowed">
                     <TextBox.InputBindings>
-                        <KeyBinding Key="Esc" Command="{Binding Test}">
+                        <KeyBinding Key="Esc" Command="{Binding DeselectCommand}">
                             <KeyBinding.CommandParameter>
                                 <MultiBinding Converter="{StaticResource TBCommandConvert}">
                                     <Binding ElementName="Retail_Value_Textbox" Path="Text"/>
