@@ -2,6 +2,7 @@
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using System.Data;
+using System.Diagnostics;
 using System.IO;
 using System.Windows;
 
@@ -14,6 +15,9 @@ namespace CoinCollection
         Other,
     }
 
+    /// <summary>
+    /// Contains information about the connection to the SQL server and logic for connecting to an SQL connection
+    /// </summary>
     public class SQLContainer
     {
         public readonly float ServerVersion = 0.01f;
@@ -25,13 +29,12 @@ namespace CoinCollection
         private readonly int _errorTrys = 5;
         private int _currentErrorTrys = 0;
 
-        private SqlConnection _sqlConnection;
+        private readonly SqlConnection _sqlConnection;
 
-        private readonly string[] _tableCreationCommands = { "CDate (Id INT IDENTITY(1,1) PRIMARY KEY, Date DATE NOT NULL)",
-            //"Coin (Id INT IDENTITY(1,1) PRIMARY KEY, Name NVARCHAR(50) NOT NULL, [Original Value] MONEY NOT NULL, [Retail Value] MONEY NOT NULL, [Amount Made] INT NOT NULL, ImagePath NVARCHAR(MAX) NOT NULL DEFAULT 'No_Coin_Image.jpg', Description NVARCHAR(MAX) NOT NULL)",
+        private readonly string[] _tableCreationCommands = [ "CDate (Id INT IDENTITY(1,1) PRIMARY KEY, Date DATE NOT NULL)",
             "Coin (Id INT IDENTITY(1,1) PRIMARY KEY, Name NVARCHAR(50) NOT NULL, Description NVARCHAR(MAX) NOT NULL, [Amount Made] INT NOT NULL, [Currency Type] NVARCHAR(MAX) NOT NULL, [Original Value] NVARCHAR(MAX) NOT NULL, [Retail Value] NVARCHAR(MAX) NOT NULL, ImagePath NVARCHAR(MAX) NOT NULL DEFAULT 'No_Coin_Image.jpg')",
             "CoinDate (Id INT IDENTITY(1,1) PRIMARY KEY, DateId INT NOT NULL, CoinId INT NOT NULL, CONSTRAINT DateFK FOREIGN KEY (DateId) REFERENCES CDate(Id), CONSTRAINT CoinFK FOREIGN KEY (CoinId) REFERENCES Coin(Id))",
-            "ServerInfo (VersionId INT IDENTITY(1,1) PRIMARY KEY, VersionNumb FLOAT NOT NULL, Description NVARCHAR(MAX), LastUpdated FLOAT NOT NULL)"};
+            "ServerInfo (VersionId INT IDENTITY(1,1) PRIMARY KEY, VersionNumb FLOAT NOT NULL, Description NVARCHAR(MAX), LastUpdated FLOAT NOT NULL)"];
 
         public SQLContainer()
         {
@@ -58,14 +61,33 @@ namespace CoinCollection
 
         public bool NewServer(string loc)
         {
-            if (File.Exists(Path.Combine(loc, "Coins.mdf")))
+            /*if (File.Exists(Path.Combine(loc, "Coins.mdf")))
             {
                 return ExistingServer(Path.Combine(loc, "Coins.mdf"));
             }
 
             SqlConnection connect = new(@"Server=(localdb)\MSSQLLocalDB;Integrated Security=true;");
 
-            SqlCommand command = new($"CREATE DATABASE Coins ON PRIMARY (NAME = Coins, FILENAME = '{Path.Combine(loc, "Coins.mdf")}') LOG ON (NAME = Coins_log, FILENAME = '{Path.Combine(loc, "Coins_log.ldf")}');", connect);
+            SQLCommandFactory commandFactory = new SQLCommandFactory().Create_Database("Coins", "Coins", $"{Path.Combine(loc, "Coins.mdf")}").Log_On("Coins_log", $"{Path.Combine(loc, "Coins_log.ldf")}");
+
+            //SqlCommand command = new($"CREATE DATABASE Coins ON PRIMARY (NAME = Coins, FILENAME = '{Path.Combine(loc, "Coins.mdf")}') LOG ON (NAME = Coins_log, FILENAME = '{Path.Combine(loc, "Coins_log.ldf")}');", connect);
+            SqlCommand command = commandFactory.ToSQLCommand(connect);*/
+
+            string name = loc.Substring(loc.LastIndexOf("\\") + 1);
+            string path = loc.Replace(name, "");
+
+            name = name.Remove(name.LastIndexOf("."));
+
+            if (File.Exists($"{path}{name}_Data.mdf"))
+            {
+                return ExistingServer($"{path}{name}_Data.mdf");
+            }
+
+            SqlConnection connect = new(@"Server=(localdb)\MSSQLLocalDB;Integrated Security=true;");
+
+            SQLCommandFactory commandFactory = new SQLCommandFactory().Create_Database(name, $"{name}_Data", $"{path}{name}_Data.mdf").Log_On($"{name}_log", $"{path}{name}_log.ldf");
+
+            SqlCommand command = commandFactory.ToSQLCommand(connect);
 
             try
             {
@@ -76,28 +98,66 @@ namespace CoinCollection
 
                     foreach(string tableCommand in _tableCreationCommands)
                     {
-                        command.CommandText = $"USE Coins; CREATE TABLE {tableCommand};";
+                        //command.CommandText = $"USE Coins; CREATE TABLE {tableCommand};";
+
+                        //command = commandFactory.Use("Coins").Create_Table($"{tableCommand}").ToSQLCommand(connect, false);
+                        
+                        command = commandFactory.Use($"{name}").Create_Table($"{tableCommand}").ToSQLCommand(connect, false);
                         command.ExecuteNonQuery();
                     }
 
-                    command.CommandText = $"USE Coins; INSERT INTO ServerInfo (VersionNumb, Description, LastUpdated) VALUES ({ServerVersion}, '{_serverVersionDescription}', {10.1f})";
+                    //command.CommandText = $"USE Coins; INSERT INTO ServerInfo (VersionNumb, Description, LastUpdated) VALUES ({ServerVersion}, '{_serverVersionDescription}', {10.1f})";
+
+                    command = commandFactory.Use($"{name}").Insert_Into("ServerInfo", 
+                        new InsertValues<float>("VersionNumb", ServerVersion), 
+                        new InsertValues<string>("Description", _serverVersionDescription), 
+                        new InsertValues<float>("LastUpdated", 10.1f)).ToSQLCommand(connect);
+                    
                     command.ExecuteNonQuery();
                 }
             }
             catch (SqlException ex)
             {
-                _currentErrorTrys++;
+                if(ex.Message.Contains("already exists"))
+                {
+                    connect = new(@"Server=(localdb)\MSSQLLocalDB;Integrated Security=true;");
+
+                    using (connect)
+                    {
+                        string readyName = ex.Message.Substring(ex.Message.IndexOf('\'') + 1, ex.Message.LastIndexOf('\'')).Replace("\' already", "").Trim();
+
+                        //SqlCommand temp = commandFactory.Select(SelectType.Name, "name").As("FileType").Comna().Custom("physical_name").As("FilePath").Comna()
+                        //.Custom("type_desc").As("FileTypeDesc").From("sys.master_files").Custom($"WHERE database_id = DB_ID('{readyName}')")
+                        //.ToSQLCommand(connect);
+
+                        SqlCommand temp = commandFactory.Select(SelectType.Name, "physical_name").From("sys.master_files").
+                            Custom($"WHERE database_id = DB_ID('{readyName}') AND type = 0").ToSQLCommand(connect);
+
+                        connect.Open();
+
+                        string filePath = (string)temp.ExecuteScalar();
+
+                        Debug.WriteLine(filePath);
+                    }
+
+                }
+
+                /*_currentErrorTrys++;
 
                 if(_currentErrorTrys == _errorTrys)
                 {
                     _currentErrorTrys = 0;
-                    //MessageBox.Show($"Too many attempts to fix error ({ex.Message})!!!");
 
                     App.GetInstance().Report.ShowMessage($"Too many attempts to fix error ({ex.Message})", "Warning", ReportSeverity.Warning);
                     return false;
                 }
+                else
+                {
+                    //TODO: Sort out
+                    return NewServer(loc);
+                }*/
 
-                if(ex.Message.Contains("already exists"))
+                /*if(ex.Message.Contains("already exists"))
                 {
                     connect = new(@"Server=(localdb)\MSSQLLocalDB;Integrated Security=true;");
 
@@ -105,18 +165,19 @@ namespace CoinCollection
                     {
                         connect.Open();
 
-                        SqlCommand clearSQLServer = new ("IF EXISTS (SELECT name FROM sys.databases WHERE name = 'Coins') DROP DATABASE [Coins];", connect);
+                        //SqlCommand clearSQLServer = new ("IF EXISTS (SELECT name FROM sys.databases WHERE name = 'Coins') DROP DATABASE [Coins];", connect);
+
+                        command = commandFactory.If().Exists(new SQLCommandFactory().Select(SelectType.Name, "name").From("sys.databases").Where("name", "Coins")).Drop_Database("Coins").ToSQLCommand(connect);
                         
                         try
                         {
-                            clearSQLServer.ExecuteNonQuery();
+                            //clearSQLServer.ExecuteNonQuery();
+                            command.ExecuteNonQuery();
                         }
                         catch (SqlException clearServerErrorCode)
                         {
                             if(!clearServerErrorCode.Message.Contains("Unable to open the physical file"))
                             {
-                                //MessageBox.Show(clearServerErrorCode.Message);
-
                                 App.GetInstance().Report.ShowMessage(clearServerErrorCode, "Warning", ReportSeverity.Warning);
 
                                 return false;
@@ -128,15 +189,14 @@ namespace CoinCollection
                 }
                 else
                 {
-                    //MessageBox.Show(ex.Message);
-
                     App.GetInstance().Report.ShowMessage(ex, "Warning", ReportSeverity.Warning);
 
                     return false;
-                }
+                }*/
             }
 
-            return UpdateJsonSettingsFile(Path.Combine(loc, "Coins.mdf"));
+            //return UpdateJsonSettingsFile(Path.Combine(loc, "Coins.mdf"));
+            return UpdateJsonSettingsFile($"{path}{name}_Data.mdf");
         }
 
         public bool HasConnected()
@@ -156,18 +216,12 @@ namespace CoinCollection
             }
             catch (SqlException ex)
             {
-                //Debug.WriteLine($"SQL error: {ex.Message}");
-                //MessageBox.Show(ex.Message, "SQL Error");
-
                 App.GetInstance().Report.ShowMessage(ex, "Warning", ReportSeverity.Warning);
 
                 error = SQLError.SQL;
             }
             catch (Exception ex)
             {
-                //Debug.WriteLine($"General error: {ex.Message}");
-                //MessageBox.Show(ex.Message, "Error");
-
                 App.GetInstance().Report.ShowMessage(ex, "Warning", ReportSeverity.Warning);
 
                 error = SQLError.Other;
@@ -180,7 +234,10 @@ namespace CoinCollection
             return false;
         }
 
-        //public void CheckServerExistance()
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
         public bool CheckServerExistance()
         {
             string sqlDir = App.GetInstance().SQLDir!;
@@ -199,7 +256,8 @@ namespace CoinCollection
 
             while (true)
             {
-                if (!HasConnected(out SQLError error))
+                //if (!HasConnected(out SQLError error))
+                if (!HasConnected())
                 {
                     ServerSelectorWindow ssw = App.GetInstance().GetService<ServerSelectorWindow>();
 
@@ -209,26 +267,6 @@ namespace CoinCollection
                     {
                         return false;
                     }
-
-                    /*if (error != SQLError.Other)
-                    {
-                        //TODO: Sort out thi piece of code
-                    }
-                    else
-                    {
-                        //TODO: Throw error message and close application!!!
-
-                        //App.GetInstance().GetService<ServerSelectorWindow>().Show(WindowStartupLocation.CenterScreen, true);
-
-                        ServerSelectorWindow ssw = App.GetInstance().GetService<ServerSelectorWindow>();
-
-                        ssw.ShowDialog(WindowStartupLocation.CenterScreen, true);
-
-                        if (ssw.IsCancled)
-                        {
-                            return;
-                        }
-                    }*/
                 }
                 else
                 {
@@ -242,11 +280,15 @@ namespace CoinCollection
             return true;
         }
 
+        /// <summary>
+        /// Gets information from the main server
+        /// </summary>
+        /// <returns>Data from the main server</returns>
         public DataTable GetServerInfo()
         {
             _sqlConnection.Open();
 
-            SqlDataAdapter sqlDataAdapter = new ("SELECT * FROM Coin", _sqlConnection);
+            SqlDataAdapter sqlDataAdapter = new SQLCommandFactory().Select().From("Coin").ToSQLDataAdapter(_sqlConnection);
 
             DataTable dt = new ();
 
@@ -266,8 +308,7 @@ namespace CoinCollection
 
             _sqlConnection.Open();
 
-            SqlCommand cmd = new ($"USE Coins; SELECT {columnName} FROM {tableName}", _sqlConnection);
-            object result = cmd.ExecuteScalar();
+            object result = new SQLCommandFactory().Use("Coins").Select(SelectType.Name, columnName).From(tableName).ToSQLCommand(_sqlConnection).ExecuteScalar();
 
             _sqlConnection.Close();
 
@@ -277,53 +318,6 @@ namespace CoinCollection
             }
 
             return (T)Convert.ChangeType(result, typeof(T));
-        }
-
-        public bool CheckMoneyNameExists(string currencyName)
-        {
-            _sqlConnection.Open();
-
-            bool exists = false;
-
-            using (SqlCommand command = new($"SELECT COUNT(*) FROM Coin WHERE Name = '{currencyName}'", _sqlConnection))
-            {
-                exists = (int)command.ExecuteScalar() > 0;
-            }
-
-            _sqlConnection.Close();
-
-            return exists;
-        }
-
-        public bool SubmitNew(ServerDataContainer newData, out Exception e)
-        {
-            try
-            {
-                _sqlConnection.Open();
-
-                SqlCommand command = new($"INSERT INTO Coin VALUES {newData.CoinInfo}", _sqlConnection);
-
-                command.ExecuteNonQuery();
-
-                _sqlConnection.Close();
-
-                e = new();
-
-                return true;
-            }
-            catch (Exception foundExeption)
-            {
-                _sqlConnection.Close();
-
-                e = foundExeption;
-
-                return false;
-            }
-        }
-
-        public bool SubmitAltered(ServerDataContainer modifiedData)
-        {
-            return true;
         }
 
         /// <summary>
@@ -468,37 +462,40 @@ namespace CoinCollection
             return TryExecuteScalar(sqlCommand, out _, out ex);
         }
 
+        /// <summary>
+        /// Checks if the servers have all of the correct information catagories
+        /// </summary>
+        /// <param name="connect">The connection for the SQL server</param>
+        /// <returns>True if the servers have all of the correct information catagories</returns>
         private static bool ReturnCheckTable(SqlConnection connect)
         {
-            //return CheckTable(connect, "CDate", "Id", "Date") && CheckTable(connect, "Coin", "Id", "Name", "Original Value", "Retail Value", "Amount Made", "ImagePath", "Description") 
             return CheckTable(connect, "CDate", "Id", "Date") && CheckTable(connect, "Coin", "Id", "Name", "Description", "Amount Made", "Currency Type", "Original Value", "Retail Value", "ImagePath") 
                 && CheckTable(connect, "CoinDate", "Id", "DateId", "CoinId") && CheckTable(connect, "ServerInfo", "VersionId", "VersionNumb", "Description", "LastUpdated");
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="connect"></param>
+        /// <param name="tableName"></param>
+        /// <param name="colomNames"></param>
+        /// <returns></returns>
         private static bool CheckTable(SqlConnection connect, string tableName, params string[] colomNames)
         {
             if(string.IsNullOrEmpty(tableName))
             {
                 return false;
             }
-
-            SqlCommand command = new($"IF EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME ='{tableName}') SELECT 1 ELSE SELECT 0", connect);
-
             connect.Open();
-            int result = (int)command.ExecuteScalar();
 
-            if(result == 1)
+            if ((int)new SQLCommandFactory().If().Exists(new SQLCommandFactory().Select().From("INFORMATION_SCHEMA.TABLES").Where("TABLE_NAME", tableName)).Select_Value(1).Else().Select_Value(0).ToSQLCommand(connect).ExecuteScalar() == 1)
             {
                 if(colomNames.Length != 0)
                 {
                     foreach(string colomName in colomNames)
                     {
-                        command.CommandText = $"IF COL_LENGTH('{tableName}','{colomName}') IS NOT NULL SELECT 1 ELSE SELECT 0";
-
-                        if((int)command.ExecuteScalar() == 0)
+                        if((int)new SQLCommandFactory().If().COL_LENGTH(tableName, colomName).Is_Not_Null().Select_Value(1).Else().Select_Value(0).ToSQLCommand(connect).ExecuteScalar() == 0)
                         {
-                            //MessageBox.Show($"{connect.Database} does not have {colomName} colom in {tableName}!!!", "Error");
-                            
                             App.GetInstance().Report.ShowMessage($"{connect.Database} does not have {colomName} colom in {tableName}", "Warning", ReportSeverity.Warning);
 
                             connect.Close();
@@ -511,14 +508,18 @@ namespace CoinCollection
                 return true;
             }
 
-            //MessageBox.Show($"{connect.Database} does not have {tableName}!!!", "Error");
-            
             App.GetInstance().Report.ShowMessage($"{connect.Database} does not have {tableName}", "Warning", ReportSeverity.Warning);
 
             connect.Close();
             return false;
         }
 
+        /// <summary>
+        /// Checks if there is a connection to the SQL server and if so, stores it in the SQLCommand
+        /// </summary>
+        /// <param name="sqlCommand">SQLCommand to check</param>
+        /// <returns>The SQLCommand if there is a connection</returns>
+        /// <exception cref="NullReferenceException"></exception>
         private SqlCommand CheckForSQLConnection(SqlCommand sqlCommand)
         {
             if (sqlCommand == null)
@@ -539,45 +540,17 @@ namespace CoinCollection
             return sqlCommand;
         }
 
+        /// <summary>
+        /// Updates the Json settings file
+        /// </summary>
+        /// <param name="loc">Location of the Json settings file</param>
+        /// <returns>True if the Json settings file was successfully updated</returns>
         private bool UpdateJsonSettingsFile(string loc)
         {
             if(string.IsNullOrEmpty(loc))
             {
                 return false;
             }
-
-            //TODO: Sort out JSON stuff
-            /*var json = JsonNode.Parse(File.ReadAllText(Path.Combine(Directory.GetCurrentDirectory(), "appsettings.json")));
-
-            if (json != null)
-            {
-                json["SQL Dir"] = loc;
-
-                var jsonConnectionString = json["ConnectionStrings"];
-
-                if (jsonConnectionString != null)
-                {
-                    jsonConnectionString["DefaultConnection"] = $"Data Source=(LocalDB)\\MSSQLLocalDB;AttachDbFilename={loc};Integrated Security=True;Connect Timeout=30";
-                }
-                else
-                {
-                    json["ConnectionStrings"] = new JsonObject()
-                    {
-                        ["DefaultConnection"] = $"Data Source=(LocalDB)\\MSSQLLocalDB;AttachDbFilename={loc};Integrated Security=True;Connect Timeout=30"
-                    };
-                }
-            }
-            else
-            {
-                //MessageBox.Show("Unable to open appsettings!!!");
-
-                App.GetInstance().Report.ShowMessage("Unable to open appsettings", "Warning", ReportSeverity.Warning);
-                App.GetInstance().GetService<ServerSelectorWindow>().CloseWindow();
-
-                return false;
-            }
-
-            File.WriteAllText(Path.Combine(Directory.GetCurrentDirectory(), "appsettings.json"), json.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));*/
 
             App appInstance = App.GetInstance();
 
@@ -599,15 +572,12 @@ namespace CoinCollection
 
             appInstance.ConfigEditor.UpdateConfigFile();
 
-            //App.GetInstance().ConfigWait.WaitOne();
             appInstance.ConfigWait.WaitOne();
 
-            //_sqlConnection.ConnectionString = App.GetInstance().ConnectionString;
             _sqlConnection.ConnectionString = appInstance.ConnectionString;
 
             var optionsBuilder = new DbContextOptionsBuilder<LocalDBMSSQLLocalDBContext>();
 
-            //optionsBuilder.UseSqlServer(App.GetInstance().ConnectionString);
             optionsBuilder.UseSqlServer(appInstance.ConnectionString);
 
             _localDBContext = new(optionsBuilder.Options);

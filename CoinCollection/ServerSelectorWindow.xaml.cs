@@ -28,12 +28,14 @@ namespace CoinCollection
 
         private void ButtonNew(object sender, RoutedEventArgs e)
         {
-            Misc.FolderDialog.Check(this);
+            //Misc.FolderDialog.Check(this);
+            Misc.SaveFile.Check(this);
         }
 
         private void ButtonSelect(object sender, RoutedEventArgs e)
         {
-            Misc.FileDialog.Check(this);
+            //Misc.FileDialog.Check(this);
+            Misc.OpenFile.Check(this);
         }
     }
 }

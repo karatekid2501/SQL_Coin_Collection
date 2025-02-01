@@ -122,6 +122,98 @@ namespace CoinCollection
 
         }, 128 - 9);
 
+        public class FileFolderContainer<T> where T : FileDialog, new()
+        {
+            private readonly T _fileFolderDialog;
+
+            private readonly Type _type;
+
+            public FileFolderContainer()
+            {
+                _fileFolderDialog = new T()
+                {
+                    InitialDirectory = Directory.GetCurrentDirectory(),
+                    Filter = "SQL Server (*.mdf)|*.mdf",
+                    DefaultExt = ".mdf"
+                };
+
+                if(_fileFolderDialog is SaveFileDialog sfd)
+                {
+                    _type = typeof(SaveFileDialog);
+                    sfd.Title = "Cretae New Server";
+                    sfd.FileName = "Coins";
+                }
+                else if (_fileFolderDialog is OpenFileDialog ofd)
+                {
+                    _type = typeof(OpenFileDialog);
+                    ofd.Title = "Select Server";
+                }
+                else
+                {
+                    throw new InvalidCastException($"Unable to convert {typeof(T)} to either SaveFileDialog or OpenFolderDialog.");
+                }
+            }
+
+            public void Check(AdvanceWindow? advanceWindow = null)
+            {
+                if (_fileFolderDialog.ShowDialog() == true)
+                {
+                    string loc = _fileFolderDialog.FileName;
+
+                    App instacne = App.GetInstance();
+
+                    bool success;
+
+                    StringBuilder sb = new();
+
+                    int serverNamePos = loc.LastIndexOf('\\');
+                    sb.Append($"{loc[(serverNamePos + 1)..]} at {loc[..serverNamePos]}");
+
+                    if (_type == typeof(SaveFileDialog))
+                    {
+                        success = instacne.GetService<MainWindow>().NewServer(loc);
+
+                        if (success)
+                        {
+                            sb.Insert(0, "Successfully created ");
+                        }
+                        else
+                        {
+                            sb.Insert(0, "Failed to create ");
+                        }
+                    }
+                    else
+                    {
+                        success = instacne.GetService<MainWindow>().ExistingServer(loc);
+
+                        if (success)
+                        {
+                            sb.Insert(0, "Successfully selected ");
+                        }
+                        else
+                        {
+                            sb.Insert(0, "Failed to select ");
+                        }
+                    }
+
+                    if (success)
+                    {
+                        instacne.Report.AddReport(sb.ToString(), ReportSeverity.Info);
+
+                        advanceWindow?.Close();
+                    }
+                    else
+                    {
+                        instacne.Report.AddReport(sb.ToString(), ReportSeverity.Error);
+                    }
+                }
+            }
+        }
+
+        public static readonly FileFolderContainer<SaveFileDialog> SaveFile = new();
+
+        public static readonly FileFolderContainer<OpenFileDialog> OpenFile = new();
+
         //Hard coded path for the image folder location
         private static readonly string _imagePath = Path.Combine(Directory.GetCurrentDirectory(), "Images");
 

@@ -30,7 +30,7 @@ namespace CoinCollection
         }
     }
 
-    public class EventTimerActionGeneric<T>(T? key, Action<T?> action) where T : notnull
+    public class EventTimerActionGeneric<T>(T? key, Action<T?> action) : EventTimerActionBase where T : notnull
     {
         private readonly T? _key = key;
 
@@ -38,7 +38,7 @@ namespace CoinCollection
 
         public EventTimerActionGeneric(Action<T?> action) : this(default, action) { }
 
-        public void Invoke()
+        public override void Invoke()
         {
             _action(_key);
         }

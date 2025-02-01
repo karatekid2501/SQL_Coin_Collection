@@ -10,6 +10,7 @@ namespace CoinCollection
     /// </summary>
     public partial class MainWindow : AdvanceWindow
     {
+        //Current server version
         public readonly float VersionNumb = 0.01f;
 
         private readonly SQLContainer _container;
@@ -76,91 +77,118 @@ namespace CoinCollection
             base.OnClosed(e);
         }
 
+        /// <summary>
+        /// Should the overlay be shown
+        /// </summary>
+        /// <param name="v">Visability of the overlay</param>
         public void ShowOverlay(Visibility v)
         {
             Overlay.Visibility = v;
-            //_overlayVis = v;
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="loc"></param>
+        /// <returns></returns>
         public bool ExistingServer(string loc)
         {
             return _container.ExistingServer(loc);
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="loc"></param>
+        /// <returns></returns>
         public bool NewServer(string loc)
         {
             return _container.NewServer(loc);
         }
 
-        public bool CheckMoneyNameExists(string currencyName)
-        {
-            if(string.IsNullOrEmpty(currencyName))
-            {
-                return false;
-            }
-
-            return _container.CheckMoneyNameExists(currencyName);
-        }
-
-        public bool SubmitNew(ServerDataContainer newData, out Exception e)
-        {
-            bool done = _container.SubmitNew(newData, out e);
-
-            if (done)
-            {
-                UpdateTable();
-            }
-
-            return done;
-        }
-
-        public bool SubmitAltered(ServerDataContainer modifiedData)
-        {
-            bool done = _container.SubmitAltered(modifiedData);
-
-            if (done)
-            {
-                UpdateTable();
-            }
-
-            return done;
-        }
-
+        /// <summary>
+        /// Executes a Transact-SQL statement againts the connection and returns the number of rows affected
+        /// </summary>
+        /// <param name="sqlCommand">The SQL command that will be executed</param>
+        /// <returns>The number of rows that are affected</returns>
         public int ExecuteNonQuery(SqlCommand sqlCommand)
         {
             return _container.ExecuteNonQuery(sqlCommand);
         }
 
+        /// <summary>
+        /// Tries to execute a Transact-SQL statement againts the connection and returns the number of rows affected
+        /// </summary>
+        /// <param name="sqlCommand">The SQL command that will be executed</param>
+        /// <param name="sqlEx">The SQL exeption that is thrown if something goes wrong</param>
+        /// <param name="ex">The execption that is thrown if something goes wrong</param>
+        /// <returns>The number of rows that are affected</returns>
         public int TryExecuteNonQuery(SqlCommand sqlCommand, out SqlException sqlEx, out Exception ex)
         {
             return _container.TryExecuteNonQuery(sqlCommand, out sqlEx, out ex);
         }
 
+        /// <summary>
+        /// Tries to execute a Transact-SQL statement againts the connection and returns the number of rows affected
+        /// </summary>
+        /// <param name="sqlCommand">The SQL command that will be executed</param>
+        /// <param name="sqlEx">The SQL exeption that is thrown if something goes wrong</param>
+        /// <returns>The number of rows that are affected</returns>
         public int TryExecuteNonQuery(SqlCommand sqlCommand, out SqlException sqlEx)
         {
             return _container.TryExecuteNonQuery(sqlCommand, out sqlEx, out _);
         }
 
+        /// <summary>
+        /// Tries to execute a Transact-SQL statement againts the connection and returns the number of rows affected
+        /// </summary>
+        /// <param name="sqlCommand">The SQL command that will be executed</param>
+        /// <param name="ex">The execption that is thrown if something goes wrong</param>
+        /// <returns>The number of rows that are affected</returns>
         public int TryExecuteNonQuery(SqlCommand sqlCommand, out Exception ex)
         {
             return _container.TryExecuteNonQuery(sqlCommand, out _, out ex);
         }
 
+        /// <summary>
+        /// Executes the query, and returns the first column of the first row in the result set returned by the query. Additional columns or rows are ignored
+        /// </summary>
+        /// <param name="sqlCommand">The SQL command that will be executed</param>
+        /// <returns>The first column of the first row in the result, or null reference if the result set is empty. Returns a maximum of 2033 characters</returns>
         public object ExecuteScalar(SqlCommand sqlCommand)
         {
             return _container.ExecuteScalar(sqlCommand);
         }
 
+        /// <summary>
+        /// Trys to execute the query, and returns the first column of the first row in the result set returned by the query. Additional columns or rows are ignored
+        /// </summary>
+        /// <param name="sqlCommand">The SQL command that will be executed</param>
+        /// <param name="sqlEx">The SQL exeption that is thrown if something goes wrong</param>
+        /// <param name="ex">The execption that is thrown if something goes wrong</param>
+        /// <returns>The first column of the first row in the result, or null reference if the result set is empty. Returns a maximum of 2033 characters</returns>
         public object TryExecuteScalar(SqlCommand sqlCommand, out SqlException sqlEx, out Exception ex)
         {
             return _container.TryExecuteScalar(sqlCommand, out sqlEx, out ex);
         }
 
+        /// <summary>
+        /// Trys to execute the query, and returns the first column of the first row in the result set returned by the query. Additional columns or rows are ignored
+        /// </summary>
+        /// <param name="sqlCommand">The SQL command that will be executed</param>
+        /// <param name="sqlEx">The SQL exeption that is thrown if something goes wrong</param>
+        /// <returns>The first column of the first row in the result, or null reference if the result set is empty. Returns a maximum of 2033 characters</returns>
         public object TryExecuteScalar(SqlCommand sqlCommand, out SqlException sqlEx)
         {
             return _container.TryExecuteScalar(sqlCommand, out sqlEx, out _);
         }
 
+        /// <summary>
+        /// Trys to execute the query, and returns the first column of the first row in the result set returned by the query. Additional columns or rows are ignored
+        /// </summary>
+        /// <param name="sqlCommand">The SQL command that will be executed</param>
+        /// <param name="ex">The execption that is thrown if something goes wrong</param>
+        /// <returns>The first column of the first row in the result, or null reference if the result set is empty. Returns a maximum of 2033 characters</returns>
         public object TryExecuteScalar(SqlCommand sqlCommand, out Exception ex)
         {
             return _container.TryExecuteScalar(sqlCommand, out _, out ex);
@@ -232,6 +260,9 @@ namespace CoinCollection
             }
         }
 
+        /// <summary>
+        /// Updates the coin table
+        /// </summary>
         public void UpdateTable()
         {
             Coin_List.ItemsSource = _container.GetServerInfo().DefaultView;
@@ -301,6 +332,10 @@ namespace CoinCollection
             }
         }
 
+        /// <summary>
+        /// Logic for selecting the right frequency in the UI and unchecking the other frequency types
+        /// </summary>
+        /// <param name="menuName">Type of report frequency</param>
         private void CheckRFCF(string menuName)
         {
             switch(menuName)
@@ -341,6 +376,10 @@ namespace CoinCollection
             }
         }
 
+        /// <summary>
+        /// Enable or disables the reporting system
+        /// </summary>
+        /// <param name="enable">Should the reporting system be enabled</param>
         private void Ensable_Reporting(bool enable)
         {
             RFCF_Daily.IsEnabled = enable;

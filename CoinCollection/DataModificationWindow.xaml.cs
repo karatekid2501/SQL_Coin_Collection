@@ -494,7 +494,7 @@ namespace CoinCollection
             {
                 if (_serverDataContainer[0] != Name_Textbox.Text)
                 {
-                    _dupeName = (int)GetMainWindow.ExecuteScalar(new SQLCommandFactory().Select("").Count().From("Coin").Where("Name", Name_Textbox.Text).And().Not("Name", _serverDataContainer[0]).ToSQLCommand()) > 0;
+                    _dupeName = (int)GetMainWindow.ExecuteScalar(new SQLCommandFactory().Select(SelectType.Empty).Count().From("Coin").Where("Name", Name_Textbox.Text).And().Not("Name", _serverDataContainer[0]).ToSQLCommand()) > 0;
 
                     IsDupeName();
 
@@ -509,7 +509,7 @@ namespace CoinCollection
             }
             else
             {
-                _dupeName = (int)GetMainWindow.ExecuteScalar(new SQLCommandFactory().Select("").Count().From("Coin").Where("Name", Name_Textbox.Text).ToSQLCommand()) > 0;
+                _dupeName = (int)GetMainWindow.ExecuteScalar(new SQLCommandFactory().Select(SelectType.Empty).Count().From("Coin").Where("Name", Name_Textbox.Text).ToSQLCommand()) > 0;
 
                 IsDupeName();
             }
