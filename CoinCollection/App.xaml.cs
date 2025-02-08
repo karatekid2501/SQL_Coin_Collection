@@ -167,29 +167,10 @@ namespace CoinCollection
         /// </summary>
         private void CheckAppSettingsExist()
         {
-            //if (!File.Exists(Path.Combine(Directory.GetCurrentDirectory(), "appsettings.json")))
             if (!ConfigEditor.ConfigFileExist)
             {
                 //TODO: Fix issue when trying to display messagebox before IHost is created
                 //MessageBox.Show("No settings file exists, creating new one!!!", "Warning", MessageBoxButton.OK);
-
-                /*JsonObject jObject = new()
-                {
-                    ["ConnectionStrings"] = new JsonObject
-                    {
-                        ["DefaultConnection"] = string.Empty
-                    },
-
-                    ["SQL Dir"] = string.Empty,
-
-                    ["Report Settings"] = new JsonObject
-                    {
-                        ["Enabled"] = true,
-                        ["Report Frequency"] = "Daily"
-                    }
-                };
-
-                File.WriteAllText(Path.Combine(Directory.GetCurrentDirectory(), "appsettings.json"), jObject.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));*/
 
                 ConfigEditor.Create(true,
                     new JsonValueEditGroup("ConnectionStrings", new JsonValueEdit<string>("DefaultConnection", string.Empty)),

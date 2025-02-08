@@ -318,17 +318,20 @@ namespace CoinCollection
 
         public SQLCommandFactory Create_Database(string databaseName, string name, string fileName, FileSize size, FileSize maxSize, FileSize filegrowth)
         {
-            _sqlCommand.Append($"CREATE DATABASE {databaseName} ON PRIMARY (");
+            _sqlCommand.Append($"CREATE DATABASE [{databaseName}] ON PRIMARY (");
 
-            //AddParam(name, "NAME = ", ", ");
-            _sqlCommand.Append($"NAME = {name}, ");
+            _sqlCommand.Append($"NAME = [{name}], ");
 
             if (!fileName.EndsWith(".mdf"))
             {
                 fileName += ".mdf";
+                //fileName = $"[{fileName}.mdf]";
             }
+            /*else
+            {
+                fileName = $"[{fileName}]";
+            }*/
 
-            //AddParam(fileName, "FILENAME = ", ", ");
             _sqlCommand.Append($"FILENAME = '{fileName}', ");
 
             _sqlCommand.Append($"SIZE = {size.Size}, ");
@@ -362,16 +365,18 @@ namespace CoinCollection
         {
             _sqlCommand.Append($"LOG ON (");
 
-            //AddParam(name, "NAME = ", ", ");
-            _sqlCommand.Append($"NAME = {name}, ");
+            _sqlCommand.Append($"NAME = [{name}], ");
 
             if (!fileName.EndsWith(".ldf"))
             {
                 fileName += ".ldf";
+                //fileName = $"[{fileName}.ldf]";
             }
+            /*else
+            {
+                fileName = $"[{fileName}]";
+            }*/
 
-            //AddParam(fileName, "FILENAME = ", ", ");
-            //_sqlCommand.Append($"FILENAME = {fileName}, ");
             _sqlCommand.Append($"FILENAME = '{fileName}', ");
 
             _sqlCommand.Append($"SIZE = {size.Size}, ");
@@ -680,6 +685,11 @@ namespace CoinCollection
         /// <returns>Altered version of SQLCommandFactory</returns>
         public SQLCommandFactory Use(string dataBaseName)
         {
+            if(dataBaseName.Contains(' '))
+            {
+                dataBaseName = $"[{dataBaseName}]";
+            }
+
             _sqlCommand.Append($"Use {dataBaseName}; ");
 
             return this;
@@ -726,7 +736,7 @@ namespace CoinCollection
 
         public SQLCommandFactory Comna(bool removeSpace = true)
         {
-            if(removeSpace && _sqlCommand.ToString().EndsWith(" "))
+            if(removeSpace && _sqlCommand.ToString().EndsWith(' '))
             {
                 //https://stackoverflow.com/questions/23626703/stringbuilder-find-last-index-of-a-character
                 _sqlCommand.Length--;
@@ -735,6 +745,39 @@ namespace CoinCollection
             _sqlCommand.Append(", ");
 
             return this;
+        }
+
+        public SQLCommandFactory Exec(string value)
+        {
+            _sqlCommand.Append($"EXEC {value} ");
+
+            return this;
+        }
+
+
+        public string ToCommandText(bool endWithSemiColon = true, bool clearCommand = true)
+        {
+            _sqlCommand.Remove(_sqlCommand.Length - 1, 1);
+
+            if (endWithSemiColon)
+            {
+                _sqlCommand.Append(';');
+            }
+
+            string command = _sqlCommand.ToString();
+
+            foreach(SqlParameter parameter in _sqlParameters)
+            {
+                command = command.Replace(parameter.ParameterName, ConvertValue(parameter.Value));
+            }
+
+            if (clearCommand)
+            {
+                _sqlParameters.Clear();
+                _sqlCommand.Clear();
+            }
+
+            return command;
         }
 
         /// <summary>
@@ -850,9 +893,41 @@ namespace CoinCollection
         /// <param name="endAppend">Additional command structure after inserting the value name into the command</param>
         private void AddParam<T>(T value, string startAppend = "", string endAppend = "") where T : notnull
         {
+            /*if(value is string valueS && valueS.Contains(' '))
+            {
+                value = (T)Convert.ChangeType($"[{value}]", typeof(T));
+            }*/
+
             string pName = $"@param{_sqlParameters.Count}";
             _sqlCommand.Append($"{startAppend}{pName}{endAppend}");
             _sqlParameters.Add(new SqlParameter(pName, value));
+        }
+
+        /// <summary>
+        /// Converts value to a string with proper format
+        /// </summary>
+        /// <param name="value">Value to convert</param>
+        /// <returns>The converted value</returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        private static string ConvertValue(object value)
+        {
+            if (value == DBNull.Value)
+            {
+                return "NULL";
+            }
+
+            if(value.ToString() == null)
+            {
+                throw new ArgumentNullException($"Unable to convert {value} to string!!!");
+            }
+
+            return Type.GetTypeCode(value.GetType()) switch
+            {
+                TypeCode.String or TypeCode.Char => $"'{value}'",
+                TypeCode.DateTime => $"'{(DateTime)value}'",
+                TypeCode.Boolean => (bool)value ? "1" : "0",
+                _ => value.ToString()!
+            };
         }
     }
 }

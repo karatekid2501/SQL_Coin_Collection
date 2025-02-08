@@ -17,7 +17,7 @@ namespace CoinCollection
     /// </summary>
     internal static class Misc
     {
-        public class OpenDialogContainer<T> where T : CommonItemDialog, new()
+        /*public class OpenDialogContainer<T> where T : CommonItemDialog, new()
         {
             private readonly T _openDialog;
             private readonly MainWindowMethod _mwm;
@@ -120,15 +120,23 @@ namespace CoinCollection
                 return false;
             }
 
-        }, 128 - 9);
+        }, 128 - 9);*/
 
-        public class FileFolderContainer<T> where T : FileDialog, new()
+        /// <summary>
+        /// Container class for both save and open FileDialog
+        /// </summary>
+        /// <typeparam name="T">Generic class that both SaveFileDialog and OpenFileDialog use</typeparam>
+        public class FileSaveOpenContainer<T> where T : FileDialog, new()
         {
             private readonly T _fileFolderDialog;
 
             private readonly Type _type;
 
-            public FileFolderContainer()
+            private readonly string _tile;
+
+            private readonly string _fileName = "";
+
+            public FileSaveOpenContainer()
             {
                 _fileFolderDialog = new T()
                 {
@@ -137,16 +145,16 @@ namespace CoinCollection
                     DefaultExt = ".mdf"
                 };
 
-                if(_fileFolderDialog is SaveFileDialog sfd)
+                if(_fileFolderDialog is SaveFileDialog)
                 {
                     _type = typeof(SaveFileDialog);
-                    sfd.Title = "Cretae New Server";
-                    sfd.FileName = "Coins";
+                    _tile = "Create New Server";
+                    _fileName = "Coins";
                 }
-                else if (_fileFolderDialog is OpenFileDialog ofd)
+                else if (_fileFolderDialog is OpenFileDialog)
                 {
                     _type = typeof(OpenFileDialog);
-                    ofd.Title = "Select Server";
+                    _tile = "Select Server";
                 }
                 else
                 {
@@ -154,8 +162,14 @@ namespace CoinCollection
                 }
             }
 
+            /// <summary>
+            /// Checks reather the Dialog was successful
+            /// </summary>
+            /// <param name="advanceWindow">Window to close if the Dialog was successful</param>
             public void Check(AdvanceWindow? advanceWindow = null)
             {
+                Reset();
+
                 if (_fileFolderDialog.ShowDialog() == true)
                 {
                     string loc = _fileFolderDialog.FileName;
@@ -208,11 +222,20 @@ namespace CoinCollection
                     }
                 }
             }
+
+            /// <summary>
+            /// Resets the information that FileDialog uses
+            /// </summary>
+            private void Reset()
+            {
+                _fileFolderDialog.Title = _tile;
+                _fileFolderDialog.FileName = _fileName;
+            }
         }
 
-        public static readonly FileFolderContainer<SaveFileDialog> SaveFile = new();
+        public static readonly FileSaveOpenContainer<SaveFileDialog> SaveFile = new();
 
-        public static readonly FileFolderContainer<OpenFileDialog> OpenFile = new();
+        public static readonly FileSaveOpenContainer<OpenFileDialog> OpenFile = new();
 
         //Hard coded path for the image folder location
         private static readonly string _imagePath = Path.Combine(Directory.GetCurrentDirectory(), "Images");

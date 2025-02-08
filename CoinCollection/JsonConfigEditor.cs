@@ -1,26 +1,31 @@
-﻿using System;
-using System.CodeDom;
-using System.Collections.Generic;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.IO;
-using System.Linq;
-using System.Reflection;
-using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using System.Text.Json.Serialization;
-using System.Threading.Tasks;
-using System.Windows.Media.Animation;
 
 namespace CoinCollection
 {
+    /// <summary>
+    /// Base class for the JsonValue
+    /// </summary>
+    /// <param name="keyName">Name of the key</param>
     public abstract class JsonValueEditBase(string keyName)
     {
         public string KeyName { get; private set; } = keyName;
 
+        /// <summary>
+        /// Value to return for the child class
+        /// </summary>
+        /// <returns>Returns the value of the child class as an object</returns>
         public abstract object? GetValue();
     }
 
+    /// <summary>
+    /// Main class for storing values to use for the Json file
+    /// </summary>
+    /// <typeparam name="T">Type of value to store into the Json file</typeparam>
+    /// <param name="keyName">Name of the key</param>
+    /// <param name="keyValue">Name of the value</param>
     public class JsonValueEdit<T>(string keyName, T keyValue) : JsonValueEditBase(keyName) where T : notnull
     {
         public T KeyValue { get; private set; } = keyValue;
@@ -31,14 +36,26 @@ namespace CoinCollection
         }
     }
 
+    /// <summary>
+    /// Group of the Json value classes
+    /// </summary>
+    /// <param name="name">Name of the group</param>
+    /// <param name="values">Values to store with in the group</param>
     public class JsonValueEditGroup(string name, params JsonValueEditBase[] values)
     {
         public string Name { get; private set; } = name;
         public JsonValueEditBase[] JsonValues { get; private set; } = values;
     }
 
+    /// <summary>
+    /// Parentless group of single values
+    /// </summary>
+    /// <param name="values">Values to store with in the group</param>
     public class JsonValueEditGroupSingles(params JsonValueEditBase[] values) : JsonValueEditGroup(string.Empty, values) { }
 
+    /// <summary>
+    /// Json configerator editor
+    /// </summary>
     public class JsonConfigEditor
     {
         public bool CheckJsonConfig { get { return _jsonConfig != null; } }
@@ -119,24 +136,27 @@ namespace CoinCollection
             }
         }
 
-        /*public bool Set(params JsonValueEditBase[] values)
-        {
-            foreach(JsonValueEditBase value in values)
-            {
-                if(!Set(value.KeyName, value.GetValue()!))
-                {
-                    //throw new Exception($"Unable to set {value.KeyName} to {value.ValueType}");
-                }
-            }
-
-            return true;
-        }*/
-
+        /// <summary>
+        /// Sets a value with in the Json file
+        /// </summary>
+        /// <param name="value">Value to find</param>
+        /// <param name="parents">Parent hierarchy</param>
+        /// <returns>True if the value was foun and was the correct type</returns>
         public bool Set(JsonValueEditBase value, params string[] parents)
         {
             return Set(value.KeyName, value.GetValue()!, parents);
         }
 
+        /// <summary>
+        /// Sets a value with in the Json file
+        /// </summary>
+        /// <typeparam name="T">Type of value</typeparam>
+        /// <param name="keyName">Name of the key</param>
+        /// <param name="keyValue">Value to set</param>
+        /// <param name="parents">Parent hierarchy</param>
+        /// <returns>True if the value was foun and was the correct type</returns>
+        /// <exception cref="InvalidCastException"></exception>
+        /// <exception cref="ArgumentNullException"></exception>
         public bool Set<T>(string keyName, T keyValue, params string[] parents) where T : notnull
         {
             JsonObject foundParent = FindParent(_jsonConfig!, parents);
@@ -160,30 +180,6 @@ namespace CoinCollection
                 throw new ArgumentNullException($"No value by the name of {keyName}, is in {_jsonConfigName} json file!!!");
             }
         }
-
-        /*public void SetUpdate(params JsonValueEdit<object>[] values)
-        {
-            if (Set(values))
-            {
-                UpdateConfigFile();
-            }
-        }
-
-        public void SetUpdate<T>(JsonValueEdit<T> value) where T : notnull
-        {
-            if (Set(value))
-            {
-                UpdateConfigFile();
-            }
-        }
-
-        public void SetUpdate<T>(string keyName, T keyValue) where T : notnull
-        {
-            if (Set(keyName, keyValue))
-            {
-                UpdateConfigFile();
-            }
-        }*/
 
         /// <summary>
         /// Gets a value stored in the JsonObject config variable
@@ -256,6 +252,13 @@ namespace CoinCollection
             }
         }
 
+        /// <summary>
+        /// Finds the parent of the JsonObject
+        /// </summary>
+        /// <param name="jsonObject">JsonObject to find</param>
+        /// <param name="parents">Parent hierarchy</param>
+        /// <returns>The found JsonObject</returns>
+        /// <exception cref="Exception"></exception>
         private static JsonObject FindParent(JsonObject jsonObject, params string[] parents)
         {
             if(parents.Length == 0)
