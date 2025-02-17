@@ -2,6 +2,7 @@
 using System.Windows.Controls;
 using System.Data;
 using Microsoft.Data.SqlClient;
+using System.Diagnostics;
 
 namespace CoinCollection
 {
@@ -11,13 +12,15 @@ namespace CoinCollection
     public partial class MainWindow : AdvanceWindow
     {
         //Current server version
-        public readonly float VersionNumb = 0.01f;
+        public readonly float VersionNumb = 1.0f;
 
         private readonly SQLContainer _container;
 
         private DataRowView? _dataRowView;
 
         private ServerDataContainer? _serverDataContainer;
+
+        private static readonly ProcessStartInfo _helpPage = new ("https://olivermwhite.wixsite.com/website/ccm-v1-0") { UseShellExecute = true };
 
         public MainWindow() : base()
         {
@@ -87,20 +90,20 @@ namespace CoinCollection
         }
 
         /// <summary>
-        /// 
+        /// Checks if the server selected has all the tables and values needed
         /// </summary>
-        /// <param name="loc"></param>
-        /// <returns></returns>
+        /// <param name="loc">Location of the existing server</param>
+        /// <returns>True if the existing server passes the tests</returns>
         public bool ExistingServer(string loc)
         {
             return _container.ExistingServer(loc);
         }
 
         /// <summary>
-        /// 
+        /// Creates a new server
         /// </summary>
-        /// <param name="loc"></param>
-        /// <returns></returns>
+        /// <param name="loc">Location of the new server</param>
+        /// <returns>True if the new server was created successful</returns>
         public bool NewServer(string loc)
         {
             return _container.NewServer(loc);
@@ -402,6 +405,33 @@ namespace CoinCollection
                     App.GetInstance().Report.AddReport("Report is disabled", ReportSeverity.Warning);
                     App.GetInstance().Report.IsEnabled = enable;
                 }
+            }
+        }
+
+        private void HelpPage(object sender, RoutedEventArgs e)
+        {
+            if(App.GetInstance().Report.ShowMessage("Are you sure you want open the help menu. It will open a new webpage", "Info", ReportSeverity.Info,
+                MessageBoxButton.YesNo, MessageBoxImage.Information) == MessageBoxResult.Yes)
+            {
+                Process.Start(_helpPage);
+            }
+        }
+
+        private void NewServer(object sender, RoutedEventArgs e)
+        {
+            if (App.GetInstance().Report.ShowMessage("Are you sure you want to create a new server", "Warning", ReportSeverity.Warning,
+                MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes)
+            {
+                Misc.SaveFile.Check();
+            }
+        }
+
+        private void SelectNewServer(object sender, RoutedEventArgs e)
+        {
+            if (App.GetInstance().Report.ShowMessage("Are you sure you want to select another server", "Warning", ReportSeverity.Warning, 
+                MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes)
+            {
+                Misc.OpenFile.Check();
             }
         }
     }

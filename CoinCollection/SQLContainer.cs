@@ -20,9 +20,18 @@ namespace CoinCollection
     /// </summary>
     public class SQLContainer
     {
-        public readonly float ServerVersion = 0.01f;
+        public readonly float ServerVersion = 1.0f;
 
-        private readonly string _serverVersionDescription = "";
+        private readonly string _serverVersionDescription = 
+            """
+            v1.0:
+            - Create and select databases for the application
+            - Add and remove coins
+            - Clear the database
+            - View selected coins within the database
+            - Enable and disable the report system
+            - Change the frequency of the report system
+            """;
 
         private LocalDBMSSQLLocalDBContext _localDBContext;
 

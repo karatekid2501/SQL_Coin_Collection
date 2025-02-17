@@ -21,15 +21,15 @@
         <Grid HorizontalAlignment="Stretch" VerticalAlignment="Top" Height="430" Margin="0,20,0,0">
             <Menu VerticalAlignment="Top">
                 <MenuItem Header="File">
-                    <MenuItem Header="New"/>
+                    <MenuItem Header="New" Click="NewServer"/>
                     <MenuItem x:Name="Menu_Clear" Header="Clear" Click="ClearServer" IsEnabled="False"/>
-                    <MenuItem Header="Select Another Server"/>
-                    <MenuItem Header="Backup Server"/>
+                    <MenuItem Header="Select Another Server" Click="SelectNewServer"/>
+                    <!-- MenuItem Header="Backup Server"/!-->
                     <MenuItem Header="Exit" Click="Close_Click"/>
                 </MenuItem>
-                <MenuItem Header="Upgrade Server">
+                <!-- MenuItem Header="Upgrade Server">
 
-                </MenuItem>
+                </MenuItem!-->
                 <MenuItem Header="About" Click="MenuAbout"/>
                 <MenuItem Header="Settings">
                     <MenuItem Header="Report Settings">
@@ -42,7 +42,7 @@
                         <MenuItem x:Name="RFCF_Monthly" Header="Monthly" IsCheckable="True" StaysOpenOnClick="True" Checked="RFCF_Checked" Unchecked="RFCF_Unchecked"/>
                     </MenuItem>
                 </MenuItem>
-                <MenuItem Header="Help"/>
+                <MenuItem Header="Help" Click="HelpPage"/>
             </Menu>
             <GroupBox Header="Coin List" Width="300" Height="300" Margin="10,23,0,0" HorizontalAlignment="Left" VerticalAlignment="Top">
                 <ListBox x:Name="Coin_List" Width="275" Height="275" SelectionChanged="Coin_List_SelectionChanged"/>
@@ -94,7 +94,7 @@
             <Button x:Name="Modify" Content="Modify" HorizontalAlignment="Left" Margin="220,328,0,0" VerticalAlignment="Top" Width="100" Height="19" Click="ModifyServerItem" IsEnabled="False"/>
             <Button x:Name="Delete" Content="Delete" HorizontalAlignment="Left" Margin="10,328,0,0" VerticalAlignment="Top" Width="100" Height="19" Click="RemoveServerItem" IsEnabled="False"/>
             <Button x:Name="Clear" Content="Clear" HorizontalAlignment="Left" Margin="10,352,0,0" VerticalAlignment="Top" Width="310" Height="19" Click="ClearServer" IsEnabled="False"/>
-            <Button x:Name="Compile" Content="Compile" HorizontalAlignment="Left" Margin="10,376,0,0" VerticalAlignment="Top" Width="310" Height="19"/>
+            <!-- Button x:Name="Compile" Content="Compile" HorizontalAlignment="Left" Margin="10,376,0,0" VerticalAlignment="Top" Width="310" Height="19"/ !-->
         </Grid>
         <Grid x:Name="Overlay" Background="#4B000000" Margin="0,-16,0,0" Visibility="Hidden"/>
     </Grid>
