@@ -1,4 +1,4 @@
-# SQL Coin Collection (v1.0)
+# SQL Coin Collection
 This project allows coin collectors to easily keep track on which coins they have got in their collection.
 The manual can either be accessed by clicking the Help button on the main window in the application or here:
 - [Current Version](https://olivermwhite.wixsite.com/website/ccm-v1-0)
@@ -8,7 +8,7 @@ The manual can either be accessed by clicking the Help button on the main window
 No special requirements
 
 ## Installation
-- Click on Releases and then click on the Coin Collection <version number> zip folder.
+- Click on Releases and then click on the Coin Collection {version number} zip folder.
 - Once the zip is download it, right click on it and click on extract.
 - Once its extracted, you can go to the folder and click on CoinCollection.exe to start the application.
 - **Note:** It’s recommended to move the extracted folder from the Download folder, so it will not get accidentally deleted if the folder is cleared out.
