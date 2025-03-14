@@ -1,28 +1,41 @@
-﻿using CoinCollection.Models;
-using Microsoft.Data.SqlClient;
-using Microsoft.EntityFrameworkCore;
+﻿// <copyright file="SQLContainer.cs" company="Karatekid2501">
+// Copyright (c) Karatekid2501. All rights reserved.
+// </copyright>
+
 using System.Data;
-using System.Diagnostics;
 using System.IO;
 using System.Windows;
+using CoinCollection.Models;
+using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
 
 namespace CoinCollection
 {
+    /// <summary>
+    /// Type of SQL Error.
+    /// </summary>
     public enum SQLError
     {
+#pragma warning disable SA1602 // Enumeration items should be documented
         None,
         SQL,
         Other,
+#pragma warning restore SA1602 // Enumeration items should be documented
     }
 
     /// <summary>
-    /// Contains information about the connection to the SQL server and logic for connecting to an SQL connection
+    /// Contains information about the connection to the SQL server and logic for connecting to an SQL connection.
     /// </summary>
     public class SQLContainer
     {
+        /// <summary>
+        /// Current server version.
+        /// </summary>
         public readonly float ServerVersion = 1.0f;
 
-        private readonly string _serverVersionDescription = 
+        private static readonly SqlConnection _defaultConnect = new(@"Server=(localdb)\MSSQLLocalDB;Integrated Security=true;");
+
+        private readonly string _serverVersionDescription =
             """
             v1.0:
             - Create and select databases for the application
@@ -33,22 +46,22 @@ namespace CoinCollection
             - Change the frequency of the report system
             """;
 
-        private LocalDBMSSQLLocalDBContext _localDBContext;
-
         private readonly int _errorTrys = 5;
-        private int _currentErrorTrys = 0;
 
         private readonly SqlConnection _sqlConnection;
 
-        private readonly string[] _tableCreationCommands = [ "CDate (Id INT IDENTITY(1,1) PRIMARY KEY, Date DATE NOT NULL)",
+        private readonly string[] _tableCreationCommands = ["CDate (Id INT IDENTITY(1,1) PRIMARY KEY, Date DATE NOT NULL)",
             "Coin (Id INT IDENTITY(1,1) PRIMARY KEY, Name NVARCHAR(50) NOT NULL, Description NVARCHAR(MAX) NOT NULL, [Amount Made] INT NOT NULL, [Currency Type] NVARCHAR(MAX) NOT NULL, [Original Value] NVARCHAR(MAX) NOT NULL, [Retail Value] NVARCHAR(MAX) NOT NULL, ImagePath NVARCHAR(MAX) NOT NULL DEFAULT 'No_Coin_Image.jpg')",
             "CoinDate (Id INT IDENTITY(1,1) PRIMARY KEY, DateId INT NOT NULL, CoinId INT NOT NULL, CONSTRAINT DateFK FOREIGN KEY (DateId) REFERENCES CDate(Id), CONSTRAINT CoinFK FOREIGN KEY (CoinId) REFERENCES Coin(Id))",
             "ServerInfo (VersionId INT IDENTITY(1,1) PRIMARY KEY, VersionNumb FLOAT NOT NULL, Description NVARCHAR(MAX), LastUpdated FLOAT NOT NULL)"];
 
-        private static readonly SqlConnection _defaultConnect = new(@"Server=(localdb)\MSSQLLocalDB;Integrated Security=true;");
+        private int _currentErrorTrys = 0;
 
-        private static SqlConnection ReuseDefaultConnect {  get { return new SqlConnection(_defaultConnect.ConnectionString); } }
+        private LocalDBMSSQLLocalDBContext _localDBContext;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="SQLContainer"/> class.
+        /// </summary>
         public SQLContainer()
         {
             _sqlConnection = new SqlConnection(App.GetInstance().ConnectionString);
@@ -60,16 +73,24 @@ namespace CoinCollection
             _localDBContext = new(optionsBuilder.Options);
         }
 
+        private static SqlConnection ReuseDefaultConnect
+        {
+            get
+            {
+                return new SqlConnection(_defaultConnect.ConnectionString);
+            }
+        }
+
         /// <summary>
-        /// Checks if the server selected has all the tables and values needed
+        /// Checks if the server selected has all the tables and values needed.
         /// </summary>
-        /// <param name="loc">Location of the existing server</param>
-        /// <returns>True if the existing server passes the tests</returns>
+        /// <param name="loc">Location of the existing server.</param>
+        /// <returns>True if the existing server passes the tests.</returns>
         public bool ExistingServer(string loc)
         {
             SqlConnection connect = new($@"Server=(localdb)\MSSQLLocalDB;AttachDbFilename={loc};Integrated Security=true;");
 
-            if(ReturnCheckTable(connect))
+            if (ReturnCheckTable(connect))
             {
                 return UpdateJsonSettingsFile(loc);
             }
@@ -78,18 +99,18 @@ namespace CoinCollection
         }
 
         /// <summary>
-        /// Creates a new server
+        /// Creates a new server.
         /// </summary>
-        /// <param name="loc">Location of the new server</param>
-        /// <returns>True if the new server was created successful</returns>
+        /// <param name="loc">Location of the new server.</param>
+        /// <returns>True if the new server was created successful.</returns>
         public bool NewServer(string loc)
         {
             string name = loc[(loc.LastIndexOf('\\') + 1)..];
-            string path = loc.Replace(name, "");
+            string path = loc.Replace(name, string.Empty);
 
             name = name.Remove(name.LastIndexOf('.'));
 
-            SQLCommandFactory commandFactory = new ();
+            SQLCommandFactory commandFactory = new();
 
             SqlCommand command = commandFactory.Create_Database(name, $"{name} Data", $"{path}{name} Data.mdf").
                 Log_On($"{name} log", $"{path}{name} log.ldf").ToSQLCommand(_defaultConnect);
@@ -101,18 +122,19 @@ namespace CoinCollection
                     _defaultConnect.Open();
                     command.ExecuteNonQuery();
 
-                    foreach(string tableCommand in _tableCreationCommands)
+                    foreach (string tableCommand in _tableCreationCommands)
                     {
                         command.CommandText = commandFactory.Use($"{name}").Create_Table($"{tableCommand}").ToCommandText(false);
-                        
+
                         command.ExecuteNonQuery();
                     }
 
-                    command.CommandText = commandFactory.Use($"{name}").Insert_Into("ServerInfo", 
-                        new InsertValues<float>("VersionNumb", ServerVersion), 
-                        new InsertValues<string>("Description", _serverVersionDescription), 
+                    command.CommandText = commandFactory.Use($"{name}").Insert_Into(
+                        "ServerInfo",
+                        new InsertValues<float>("VersionNumb", ServerVersion),
+                        new InsertValues<string>("Description", _serverVersionDescription),
                         new InsertValues<float>("LastUpdated", 10.1f)).ToCommandText();
-                    
+
                     command.ExecuteNonQuery();
                 }
 
@@ -136,7 +158,7 @@ namespace CoinCollection
                 {
                     using (ReuseDefaultConnect)
                     {
-                        string readyName = ex.Message.Substring(ex.Message.IndexOf('\'') + 1, ex.Message.LastIndexOf('\'')).Replace("\' already", "").Trim();
+                        string readyName = ex.Message.Substring(ex.Message.IndexOf('\'') + 1, ex.Message.LastIndexOf('\'')).Replace("\' already", string.Empty).Trim();
 
                         SqlCommand temp = commandFactory.Select(SelectType.Name, "physical_name").From("sys.master_files").
                             Custom($"WHERE database_id = DB_ID('{readyName}') AND type = 0").ToSQLCommand(_defaultConnect);
@@ -145,10 +167,9 @@ namespace CoinCollection
 
                         string filePath = (string)temp.ExecuteScalar();
 
-                        if(File.Exists(filePath))
+                        if (File.Exists(filePath))
                         {
-                            App.GetInstance().Report.ShowMessage($"{name} is already used, please select another name", "Unable to use name",
-                                ReportSeverity.Warning, MessageBoxButton.OK, MessageBoxImage.Warning);
+                            App.GetInstance().Report.ShowMessage($"{name} is already used, please select another name", "Unable to use name", ReportSeverity.Warning, MessageBoxButton.OK, MessageBoxImage.Warning);
 
                             _defaultConnect.Close();
 
@@ -157,8 +178,7 @@ namespace CoinCollection
                         else
                         {
                             temp.CommandText = commandFactory.Use("master").Exec("sp_detach_db").Custom($"'{readyName}', 'true'").ToCommandText();
-                            
-                            
+
                             temp.ExecuteScalar();
 
                             _defaultConnect.Close();
@@ -183,19 +203,46 @@ namespace CoinCollection
         }
 
         /// <summary>
-        /// Is the connection valid
+        /// Backups the current database.
         /// </summary>
-        /// <returns>True if the connection was successful</returns>
+        /// <param name="loc">Location to save the database to.</param>
+        /// <param name="differential">Should the differential command be used.</param>
+        /// <returns>True if successful.</returns>
+        public bool BackupDatabase(string loc, bool differential)
+        {
+            string name = (string)ExecuteScalar(new SQLCommandFactory().Select(SelectType.Name, "db_name()").ToSQLCommand());
+
+            SQLCommandFactory cFactory = new SQLCommandFactory().Backup_Database(name, loc);
+
+            if (differential)
+            {
+                cFactory.With("DIFFERENTIAL");
+            }
+
+            SqlCommand command = cFactory.ToSQLCommand();
+
+            ExecuteNonQuery(command);
+
+            command.CommandText = cFactory.Select(SelectType.Name, "TOP 1 backup_finish_date").From("msdb.dbo.backupset").Where("database_name", name).Order_By("backup_finish_date").ToCommandText();
+
+            return File.Exists(loc) && ExecuteScalar(command) != null;
+        }
+
+        /// <summary>
+        /// Is the connection valid.
+        /// </summary>
+        /// <returns>True if the connection was successful.</returns>
         public bool HasConnected()
         {
             return HasConnected(out _);
         }
 
         /// <summary>
-        /// Is the connection valid
+        /// Is the connection valid.
+        /// TODO: Update to use the new try and catch system.
         /// </summary>
-        /// <param name="error">Type of SQL error that was recived</param>
-        /// <returns>True of the connection was successful</returns>
+        /// <param name="error">Type of SQL error that was recived.</param>
+        /// <returns>True of the connection was successful.</returns>
         public bool HasConnected(out SQLError error)
         {
             try
@@ -227,9 +274,9 @@ namespace CoinCollection
         }
 
         /// <summary>
-        /// Checks if the server exists
+        /// Checks if the server exists.
         /// </summary>
-        /// <returns>True if the server exists</returns>
+        /// <returns>True if the server exists.</returns>
         public bool CheckServerExistance()
         {
             string sqlDir = App.GetInstance().SQLDir!;
@@ -240,7 +287,7 @@ namespace CoinCollection
 
                 ssw.ShowDialog(WindowStartupLocation.CenterScreen, true);
 
-                if(ssw.IsCancled)
+                if (ssw.IsCancled)
                 {
                     return false;
                 }
@@ -261,7 +308,7 @@ namespace CoinCollection
                 }
                 else
                 {
-                    if(ReturnCheckTable(_sqlConnection))
+                    if (ReturnCheckTable(_sqlConnection))
                     {
                         break;
                     }
@@ -272,16 +319,16 @@ namespace CoinCollection
         }
 
         /// <summary>
-        /// Gets information from the main server
+        /// Gets information from the main server.
         /// </summary>
-        /// <returns>Data from the main server</returns>
+        /// <returns>Data from the main server.</returns>
         public DataTable GetServerInfo()
         {
             _sqlConnection.Open();
 
             SqlDataAdapter sqlDataAdapter = new SQLCommandFactory().Select().From("Coin").ToSQLDataAdapter(_sqlConnection);
 
-            DataTable dt = new ();
+            DataTable dt = new();
 
             sqlDataAdapter.Fill(dt);
 
@@ -291,19 +338,19 @@ namespace CoinCollection
         }
 
         /// <summary>
-        /// Gets information about a column
+        /// Gets information about a column.
         /// </summary>
-        /// <typeparam name="T">Type to convert the result to</typeparam>
-        /// <param name="tableName">Name of table to check</param>
-        /// <param name="columnName">Name of column to check</param>
-        /// <returns>Result as T</returns>
-        /// <exception cref="Exception"></exception>
-        /// <exception cref="InvalidOperationException"></exception>
+        /// <typeparam name="T">Type to convert the result to.</typeparam>
+        /// <param name="tableName">Name of table to check.</param>
+        /// <param name="columnName">Name of column to check.</param>
+        /// <returns>Result as T.</returns>
+        /// <exception cref="ArgumentException">Thrown when either the tableName, columnName or both are empty.</exception>
+        /// <exception cref="InvalidOperationException">Thrown when no data was found in the table and column.</exception>
         public T GetServerColumnInfo<T>(string tableName, string columnName)
         {
-            if(string.IsNullOrEmpty(tableName) || string.IsNullOrEmpty(columnName))
+            if (string.IsNullOrEmpty(tableName) || string.IsNullOrEmpty(columnName))
             {
-                throw new Exception("TableName and ColumnName can not be empty!!!");
+                throw new ArgumentException("TableName and ColumnName can not be empty!!!");
             }
 
             _sqlConnection.Open();
@@ -321,10 +368,10 @@ namespace CoinCollection
         }
 
         /// <summary>
-        /// Executes a Transact-SQL statement againts the connection and returns the number of rows affected
+        /// Executes a Transact-SQL statement againts the connection and returns the number of rows affected.
         /// </summary>
-        /// <param name="sqlCommand">The SQL command that will be executed</param>
-        /// <returns>The number of rows that are affected</returns>
+        /// <param name="sqlCommand">The SQL command that will be executed.</param>
+        /// <returns>The number of rows that are affected.</returns>
         public int ExecuteNonQuery(SqlCommand sqlCommand)
         {
             sqlCommand = CheckForSQLConnection(sqlCommand);
@@ -339,12 +386,12 @@ namespace CoinCollection
         }
 
         /// <summary>
-        /// Tries to execute a Transact-SQL statement againts the connection and returns the number of rows affected
+        /// Tries to execute a Transact-SQL statement againts the connection and returns the number of rows affected.
         /// </summary>
-        /// <param name="sqlCommand">The SQL command that will be executed</param>
-        /// <param name="sqlEx">The SQL exeption that is thrown if something goes wrong</param>
-        /// <param name="ex">The execption that is thrown if something goes wrong</param>
-        /// <returns>The number of rows that are affected</returns>
+        /// <param name="sqlCommand">The SQL command that will be executed.</param>
+        /// <param name="sqlEx">The SQL exeption that is thrown if something goes wrong.</param>
+        /// <param name="ex">The execption that is thrown if something goes wrong.</param>
+        /// <returns>The number of rows that are affected.</returns>
         public int TryExecuteNonQuery(SqlCommand sqlCommand, out SqlException sqlEx, out Exception ex)
         {
             int result = -1;
@@ -370,32 +417,32 @@ namespace CoinCollection
         }
 
         /// <summary>
-        /// Tries to execute a Transact-SQL statement againts the connection and returns the number of rows affected
+        /// Tries to execute a Transact-SQL statement againts the connection and returns the number of rows affected.
         /// </summary>
-        /// <param name="sqlCommand">The SQL command that will be executed</param>
-        /// <param name="sqlEx">The SQL exeption that is thrown if something goes wrong</param>
-        /// <returns>The number of rows that are affected</returns>
+        /// <param name="sqlCommand">The SQL command that will be executed.</param>
+        /// <param name="sqlEx">The SQL exeption that is thrown if something goes wrong.</param>
+        /// <returns>The number of rows that are affected.</returns>
         public int TryExecuteNonQuery(SqlCommand sqlCommand, out SqlException sqlEx)
         {
             return TryExecuteNonQuery(sqlCommand, out sqlEx, out _);
         }
 
         /// <summary>
-        /// Tries to execute a Transact-SQL statement againts the connection and returns the number of rows affected
+        /// Tries to execute a Transact-SQL statement againts the connection and returns the number of rows affected.
         /// </summary>
-        /// <param name="sqlCommand">The SQL command that will be executed</param>
-        /// <param name="ex">The execption that is thrown if something goes wrong</param>
-        /// <returns>The number of rows that are affected</returns>
+        /// <param name="sqlCommand">The SQL command that will be executed.</param>
+        /// <param name="ex">The execption that is thrown if something goes wrong.</param>
+        /// <returns>The number of rows that are affected.</returns>
         public int TryExecuteNonQuery(SqlCommand sqlCommand, out Exception ex)
         {
             return TryExecuteNonQuery(sqlCommand, out _, out ex);
         }
 
         /// <summary>
-        /// Executes the query, and returns the first column of the first row in the result set returned by the query. Additional columns or rows are ignored
+        /// Executes the query, and returns the first column of the first row in the result set returned by the query. Additional columns or rows are ignored.
         /// </summary>
-        /// <param name="sqlCommand">The SQL command that will be executed</param>
-        /// <returns>The first column of the first row in the result, or null reference if the result set is empty. Returns a maximum of 2033 characters</returns>
+        /// <param name="sqlCommand">The SQL command that will be executed.</param>
+        /// <returns>The first column of the first row in the result, or null reference if the result set is empty. Returns a maximum of 2033 characters.</returns>
         public object ExecuteScalar(SqlCommand sqlCommand)
         {
             sqlCommand = CheckForSQLConnection(sqlCommand);
@@ -410,12 +457,12 @@ namespace CoinCollection
         }
 
         /// <summary>
-        /// Trys to execute the query, and returns the first column of the first row in the result set returned by the query. Additional columns or rows are ignored
+        /// Trys to execute the query, and returns the first column of the first row in the result set returned by the query. Additional columns or rows are ignored.
         /// </summary>
-        /// <param name="sqlCommand">The SQL command that will be executed</param>
-        /// <param name="sqlEx">The SQL exeption that is thrown if something goes wrong</param>
-        /// <param name="ex">The execption that is thrown if something goes wrong</param>
-        /// <returns>The first column of the first row in the result, or null reference if the result set is empty. Returns a maximum of 2033 characters</returns>
+        /// <param name="sqlCommand">The SQL command that will be executed.</param>
+        /// <param name="sqlEx">The SQL exeption that is thrown if something goes wrong.</param>
+        /// <param name="ex">The execption that is thrown if something goes wrong.</param>
+        /// <returns>The first column of the first row in the result, or null reference if the result set is empty. Returns a maximum of 2033 characters.</returns>
         public object TryExecuteScalar(SqlCommand sqlCommand, out SqlException sqlEx, out Exception ex)
         {
             object result = null!;
@@ -441,60 +488,61 @@ namespace CoinCollection
         }
 
         /// <summary>
-        /// Trys to execute the query, and returns the first column of the first row in the result set returned by the query. Additional columns or rows are ignored
+        /// Trys to execute the query, and returns the first column of the first row in the result set returned by the query. Additional columns or rows are ignored.
         /// </summary>
-        /// <param name="sqlCommand">The SQL command that will be executed</param>
-        /// <param name="sqlEx">The SQL exeption that is thrown if something goes wrong</param>
-        /// <returns>The first column of the first row in the result, or null reference if the result set is empty. Returns a maximum of 2033 characters</returns>
+        /// <param name="sqlCommand">The SQL command that will be executed.</param>
+        /// <param name="sqlEx">The SQL exeption that is thrown if something goes wrong.</param>
+        /// <returns>The first column of the first row in the result, or null reference if the result set is empty. Returns a maximum of 2033 characters.</returns>
         public object TryExecuteScalar(SqlCommand sqlCommand, out SqlException sqlEx)
         {
             return TryExecuteScalar(sqlCommand, out sqlEx, out _);
         }
 
         /// <summary>
-        /// Trys to execute the query, and returns the first column of the first row in the result set returned by the query. Additional columns or rows are ignored
+        /// Trys to execute the query, and returns the first column of the first row in the result set returned by the query. Additional columns or rows are ignored.
         /// </summary>
-        /// <param name="sqlCommand">The SQL command that will be executed</param>
-        /// <param name="ex">The execption that is thrown if something goes wrong</param>
-        /// <returns>The first column of the first row in the result, or null reference if the result set is empty. Returns a maximum of 2033 characters</returns>
+        /// <param name="sqlCommand">The SQL command that will be executed.</param>
+        /// <param name="ex">The execption that is thrown if something goes wrong.</param>
+        /// <returns>The first column of the first row in the result, or null reference if the result set is empty. Returns a maximum of 2033 characters.</returns>
         public object TryExecuteScalar(SqlCommand sqlCommand, out Exception ex)
         {
             return TryExecuteScalar(sqlCommand, out _, out ex);
         }
 
         /// <summary>
-        /// Checks if the servers have all of the correct information catagories
+        /// Checks if the servers have all of the correct information catagories.
         /// </summary>
-        /// <param name="connect">The connection for the SQL server</param>
-        /// <returns>True if the servers have all of the correct information catagories</returns>
+        /// <param name="connect">The connection for the SQL server.</param>
+        /// <returns>True if the servers have all of the correct information catagories.</returns>
         private static bool ReturnCheckTable(SqlConnection connect)
         {
-            return CheckTable(connect, "CDate", "Id", "Date") && CheckTable(connect, "Coin", "Id", "Name", "Description", "Amount Made", "Currency Type", "Original Value", "Retail Value", "ImagePath") 
+            return CheckTable(connect, "CDate", "Id", "Date") && CheckTable(connect, "Coin", "Id", "Name", "Description", "Amount Made", "Currency Type", "Original Value", "Retail Value", "ImagePath")
                 && CheckTable(connect, "CoinDate", "Id", "DateId", "CoinId") && CheckTable(connect, "ServerInfo", "VersionId", "VersionNumb", "Description", "LastUpdated");
         }
 
         /// <summary>
-        /// Checks if the table and colums in the table are correct in the server that is connected
+        /// Checks if the table and colums in the table are correct in the server that is connected.
         /// </summary>
-        /// <param name="connect">The connection to the server</param>
-        /// <param name="tableName">Name of the table to check</param>
-        /// <param name="colomNames">Names of the colums to check in the table</param>
-        /// <returns>True if the server has the needed columes and table</returns>
+        /// <param name="connect">The connection to the server.</param>
+        /// <param name="tableName">Name of the table to check.</param>
+        /// <param name="colomNames">Names of the colums to check in the table.</param>
+        /// <returns>True if the server has the needed columes and table.</returns>
         private static bool CheckTable(SqlConnection connect, string tableName, params string[] colomNames)
         {
-            if(string.IsNullOrEmpty(tableName))
+            if (string.IsNullOrEmpty(tableName))
             {
                 return false;
             }
+
             connect.Open();
 
             if ((int)new SQLCommandFactory().If().Exists(new SQLCommandFactory().Select().From("INFORMATION_SCHEMA.TABLES").Where("TABLE_NAME", tableName)).Select_Value(1).Else().Select_Value(0).ToSQLCommand(connect).ExecuteScalar() == 1)
             {
-                if(colomNames.Length != 0)
+                if (colomNames.Length != 0)
                 {
-                    foreach(string colomName in colomNames)
+                    foreach (string colomName in colomNames)
                     {
-                        if((int)new SQLCommandFactory().If().COL_LENGTH(tableName, colomName).Is_Not_Null().Select_Value(1).Else().Select_Value(0).ToSQLCommand(connect).ExecuteScalar() == 0)
+                        if ((int)new SQLCommandFactory().If().COL_LENGTH(tableName, colomName).Is_Not_Null().Select_Value(1).Else().Select_Value(0).ToSQLCommand(connect).ExecuteScalar() == 0)
                         {
                             App.GetInstance().Report.ShowMessage($"{connect.Database} does not have {colomName} colunm in {tableName}", "Warning", ReportSeverity.Warning);
 
@@ -515,24 +563,18 @@ namespace CoinCollection
         }
 
         /// <summary>
-        /// Checks if there is a connection to the SQL server and if so, stores it in the SQLCommand
+        /// Checks if there is a connection to the SQL server and if so, stores it in the SQLCommand.
         /// </summary>
-        /// <param name="sqlCommand">SQLCommand to check</param>
-        /// <returns>The SQLCommand if there is a connection</returns>
-        /// <exception cref="NullReferenceException"></exception>
+        /// <param name="sqlCommand">SQLCommand to check.</param>
+        /// <returns>The SQLCommand if there is a connection.</returns>
+        /// <exception cref="ArgumentNullException">Throws if _sqlConnection or sqlCommand is null.</exception>
         private SqlCommand CheckForSQLConnection(SqlCommand sqlCommand)
         {
-            if (sqlCommand == null)
-            {
-                throw new NullReferenceException("SQLCommand is null");
-            }
+            ArgumentNullException.ThrowIfNull(sqlCommand);
 
             if (sqlCommand.Connection == null)
             {
-                if (_sqlConnection == null)
-                {
-                    throw new NullReferenceException("No SQL Connection in SQL command or in SQL Container!!!");
-                }
+                ArgumentNullException.ThrowIfNull(_sqlConnection);
 
                 sqlCommand.Connection = _sqlConnection;
             }
@@ -541,20 +583,20 @@ namespace CoinCollection
         }
 
         /// <summary>
-        /// Updates the Json settings file
+        /// Updates the Json settings file.
         /// </summary>
-        /// <param name="loc">Location of the Json settings file</param>
-        /// <returns>True if the Json settings file was successfully updated</returns>
+        /// <param name="loc">Location of the Json settings file.</param>
+        /// <returns>True if the Json settings file was successfully updated.</returns>
         private bool UpdateJsonSettingsFile(string loc)
         {
-            if(string.IsNullOrEmpty(loc))
+            if (string.IsNullOrEmpty(loc))
             {
                 return false;
             }
 
             App appInstance = App.GetInstance();
 
-            if(appInstance.ConfigEditor.ConfigFileExist)
+            if (appInstance.ConfigEditor.ConfigFileExist)
             {
                 if (!appInstance.ConfigEditor.Set("SQL Dir", loc) || !appInstance.ConfigEditor.Set("DefaultConnection", $"Data Source=(LocalDB)\\MSSQLLocalDB;AttachDbFilename={loc};Integrated Security=True;Connect Timeout=30", "ConnectionStrings"))
                 {

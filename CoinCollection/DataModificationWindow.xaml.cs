@@ -1,47 +1,58 @@
-﻿using Microsoft.Data.SqlClient;
-using Microsoft.Win32;
-using SixLabors.ImageSharp;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
+﻿// <copyright file="DataModificationWindow.xaml.cs" company="Karatekid2501">
+// Copyright (c) Karatekid2501. All rights reserved.
+// </copyright>
+
 using System.Globalization;
 using System.IO;
-using System.Linq;
 using System.Runtime.InteropServices;
-using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using Microsoft.Data.SqlClient;
+using Microsoft.Win32;
 
 namespace CoinCollection
 {
     /// <summary>
-    /// Stores common information for checking if the textbox was modified
+    /// Stores common information for checking if the textbox was modified.
     /// </summary>
-    /// <param name="textBoxInfo">Altered text from textbox</param>
-    /// <param name="label">Modified label</param>
-    /// <param name="number">Number to alter</param>
+    /// <param name="textBoxInfo">Altered text from textbox.</param>
+    /// <param name="label">Modified label.</param>
+    /// <param name="number">Number to alter.</param>
     public class TextBoxCommand(string textBoxInfo, Label label, int number)
     {
-        public string TextInfo { get; set; } = textBoxInfo;
-        public Label Label { get; set; } = label;
-        public int Number { get; set; } = number;
+        /// <summary>
+        /// Gets the text box information.
+        /// </summary>
+        public string TextInfo { get; private set; } = textBoxInfo;
+
+        /// <summary>
+        /// Gets the label of the textbox.
+        /// </summary>
+        public Label Label { get; private set; } = label;
+
+        /// <summary>
+        /// Gets the text box is stored at in ServerDataContainer at value position.
+        /// </summary>
+        public int Number { get; private set; } = number;
     }
 
     /// <summary>
-    /// Converts the textbox information group into TextBoxCommand
+    /// Converts the textbox information group into TextBoxCommand.
     /// </summary>
     public class TextBoxCommandConverter : IMultiValueConverter
     {
+        /// <summary>
+        /// Gets or sets how many values should be stored.
+        /// </summary>
         public int ValueAmount { get; set; }
 
+        /// <inheritdoc/>
         public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
         {
             if (values.Length == ValueAmount && values[0] is string text && values[1] is Label label && values[2] is int number)
@@ -52,6 +63,7 @@ namespace CoinCollection
             return null!;
         }
 
+        /// <inheritdoc/>
         public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
         {
             throw new NotImplementedException();
@@ -59,17 +71,26 @@ namespace CoinCollection
     }
 
     /// <summary>
-    /// Interaction logic for DataModificationWindow.xaml
+    /// Interaction logic for DataModificationWindow.xaml.
     /// </summary>
     public partial class DataModificationWindow : AdvanceWindow
     {
-        #region Get window icons
+        // TODO: Fix issue
+        [DllImport("user32.dll", SetLastError = true)]
+        private static extern IntPtr LoadIcon(IntPtr hInstance, int lpIconName);
+
+        [LibraryImport("user32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static partial bool DestroyIcon(IntPtr hIcon);
+
         private static BitmapSource GetShellIcon()
         {
             IntPtr hIcon = LoadIcon(IntPtr.Zero, 32515); // IDI_WARNING
 
             if (hIcon == IntPtr.Zero)
+            {
                 throw new InvalidOperationException("Failed to load system icon.");
+            }
 
             BitmapSource icon = Imaging.CreateBitmapSourceFromHIcon(
                 hIcon,
@@ -79,41 +100,38 @@ namespace CoinCollection
             DestroyIcon(hIcon); // Clean up
             return icon;
         }
+    }
 
-        [DllImport("user32.dll", SetLastError = true)]
-        private static extern IntPtr LoadIcon(IntPtr hInstance, int lpIconName);
-
-        [DllImport("user32.dll", SetLastError = true)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        private static extern bool DestroyIcon(IntPtr hIcon);
-        #endregion
-
-        public ICommand DeselectCommand { get; }
-        public ICommand DeselectCheckCurrencyNameCommand { get; }
+    /// <summary>
+    /// Implementation of DataModificationWindow.xaml.
+    /// </summary>
+    public partial class DataModificationWindow : AdvanceWindow
+    {
+        // https://stackoverflow.com/questions/1268552/how-do-i-get-a-textbox-to-only-accept-numeric-input-in-wpf
+        private static readonly Regex _regex = new("[^0-9]+");
 
         private readonly string _imagePath = Path.Combine(Directory.GetCurrentDirectory(), "Images");
 
         private readonly OpenFileDialog _openFileDialog = new()
         {
             InitialDirectory = Directory.GetCurrentDirectory(),
-            Filter = "JPG (*.jpg)|*.jpg|PNG (*.png)|*.png|JPEG (*.jpeg)|*.jpeg"
+            Filter = "JPG (*.jpg)|*.jpg|PNG (*.png)|*.png|JPEG (*.jpeg)|*.jpeg",
         };
 
         private readonly string _defualtImageName = "No Coin Image.jpg";
 
-        //https://stackoverflow.com/questions/1268552/how-do-i-get-a-textbox-to-only-accept-numeric-input-in-wpf
-        private static readonly Regex _regex = new ("[^0-9]+");
+        private readonly WPFExceptionsDisplay _exceptionDisplay;
 
-        //Checks if the name of the coin already exists
+        // Checks if the name of the coin already exists
         private bool _dupeName = false;
 
         private ServerDataContainer? _serverDataContainer;
 
-        private readonly WPFExceptionsDisplay _exceptionDisplay;
-
-        private static MainWindow GetMainWindow { get { return App.GetInstance().GetService<MainWindow>(); } }
-
-        public DataModificationWindow() : base(true)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DataModificationWindow"/> class.
+        /// </summary>
+        public DataModificationWindow()
+            : base(true)
         {
             DeselectCommand = new RelayCommand<TextBoxCommand>(DeselectTextBox);
             DeselectCheckCurrencyNameCommand = new RelayCommand(DeselectCheckCurrencyName);
@@ -142,20 +160,33 @@ namespace CoinCollection
             UpdateCoinImages();
         }
 
-        private void Calender_Date_Selector_SelectedDatesChanged(object? sender, SelectionChangedEventArgs e)
+        /// <summary>
+        /// Gets command logic for deselecting text boxes.
+        /// </summary>
+        public ICommand DeselectCommand { get; }
+
+        /// <summary>
+        /// Gets command logic for deselecting the name text box.
+        /// </summary>
+        public ICommand DeselectCheckCurrencyNameCommand { get; }
+
+        private static MainWindow GetMainWindow
         {
-            Calender_Date_Selected_Label.Content = Calender_Date_Selector.SelectedDate!.Value.ToShortDateString();
+            get
+            {
+                return App.GetInstance().GetService<MainWindow>();
+            }
         }
 
         /// <summary>
         /// Opens a window and returns without waiting for the newly opened window to close.
         /// </summary>
-        /// <param name="wsl">Start up location of the window</param>
-        /// <param name="topMost">Should the window always be on top</param>
-        /// <param name="serverDataContainer">Information about the coin that is going to be modified</param>
+        /// <param name="wsl">Start up location of the window.</param>
+        /// <param name="topMost">Should the window always be on top.</param>
+        /// <param name="serverDataContainer">Information about the coin that is going to be modified.</param>
         public virtual void Show(WindowStartupLocation wsl, bool topMost = false, ServerDataContainer? serverDataContainer = null)
         {
-            if(serverDataContainer == null)
+            if (serverDataContainer == null)
             {
                 Title = "New";
             }
@@ -172,11 +203,11 @@ namespace CoinCollection
         /// <summary>
         /// Opens a window and returns only when the newly opened window is closed.
         /// </summary>
-        /// <param name="wsl">Start up location of the window</param>
-        /// <param name="topMost">Should the window always be on top</param>
-        /// <param name="serverDataContainer">Information about the coin that is going to be modified</param>
+        /// <param name="wsl">Start up location of the window.</param>
+        /// <param name="topMost">Should the window always be on top.</param>
+        /// <param name="serverDataContainer">Information about the coin that is going to be modified.</param>
         /// <returns>
-        /// A <see cref="System.Nullable"/> value of type <see cref="System.Boolean"/> that specifies whether the activity
+        /// A <see cref="System.Nullable"/> value of type <see cref="bool"/> that specifies whether the activity
         /// was accepted (<see href="true"/>) or canceled (<see href="false"/>). The return value is the value of the
         /// <see cref="System.Windows.Window.DialogResult"/> property before a window closes.</returns>
         public virtual bool? ShowDialog(WindowStartupLocation wsl, bool topMost = false, ServerDataContainer? serverDataContainer = null)
@@ -195,6 +226,7 @@ namespace CoinCollection
             return base.ShowDialog(wsl, topMost);
         }
 
+        /// <inheritdoc/>
         protected override void OnClosed(EventArgs e)
         {
             IsVisibleChanged -= Visable;
@@ -203,11 +235,58 @@ namespace CoinCollection
             base.OnClosed(e);
         }
 
+        /// <summary>
+        /// Checks if a combobox contains a certain item by checking a paramiter with in the item using predicate.
+        /// </summary>
+        /// <typeparam name="T">Item type.</typeparam>
+        /// <param name="comboBox">Combobox to check.</param>
+        /// <param name="item">Item to check from using preficate.</param>
+        /// <returns>True if the combobox contains the item.</returns>
+        private static bool ComboBoxContains<T>(ComboBox comboBox, Predicate<T> item)
+        {
+            for (int i = 0; i < comboBox.Items.Count; i++)
+            {
+                if (item((T)comboBox.Items[i]))
+                {
+                    comboBox.SelectedIndex = i;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Checks if a combobox contains a certain item.
+        /// </summary>
+        /// <typeparam name="T">Item type.</typeparam>
+        /// <param name="comboBox">Combobox to check.</param>
+        /// <param name="item">Item to check from.</param>
+        /// <returns>True if the combobox contains the item.</returns>
+        private static bool ComboBoxContains<T>(ComboBox comboBox, T item)
+        {
+            for (int i = 0; i < comboBox.Items.Count; i++)
+            {
+                if (Equals(comboBox.Items[i], item))
+                {
+                    comboBox.SelectedIndex = i;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private void Calender_Date_Selector_SelectedDatesChanged(object? sender, SelectionChangedEventArgs e)
+        {
+            Calender_Date_Selected_Label.Content = Calender_Date_Selector.SelectedDate!.Value.ToShortDateString();
+        }
+
         private void Visable(object sender, DependencyPropertyChangedEventArgs e)
         {
-            if(IsVisible)
+            if (IsVisible)
             {
-                if(_serverDataContainer == null)
+                if (_serverDataContainer == null)
                 {
                     Image_ComboBox.SelectedIndex = 0;
                     Currency_Type_ComboBox.SelectedIndex = 0;
@@ -242,9 +321,9 @@ namespace CoinCollection
                     }
                     else
                     {
-                        Calender_Date_Selector.SelectedDate = DateTime.Parse(_serverDataContainer[2]);
+                        Calender_Date_Selector.SelectedDate = DateTime.Parse(_serverDataContainer[2], new CultureInfo("en-US"));
                     }
-                    
+
                     Amount_Made_Textbox.Text = _serverDataContainer[3];
 
                     if (ComboBoxContains<Currency>(Currency_Type_ComboBox, x => x.CurrencyName == _serverDataContainer[4]))
@@ -271,13 +350,13 @@ namespace CoinCollection
             {
                 Image_ComboBox.Items.Add(Path.GetFileName(imageName));
 
-                if(Path.GetFileName(imageName) == _defualtImageName)
+                if (Path.GetFileName(imageName) == _defualtImageName)
                 {
                     defualtPos = Image_ComboBox.Items.Count - 1;
                 }
             }
 
-            if(defualtPos != -1 && defualtPos != 0)
+            if (defualtPos != -1 && defualtPos != 0)
             {
                 (Image_ComboBox.Items[defualtPos], Image_ComboBox.Items[0]) = (Image_ComboBox.Items[0], Image_ComboBox.Items[defualtPos]);
             }
@@ -293,7 +372,7 @@ namespace CoinCollection
 
         private void Currency_Type_ComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if(Currency_Type_ComboBox.SelectedItem is Currency selectedCurrency)
+            if (Currency_Type_ComboBox.SelectedItem is Currency selectedCurrency)
             {
                 Original_Value_ComboBox.SelectedIndex = 0;
                 Original_Value_ComboBox.ItemsSource = selectedCurrency.CurrencyInfo;
@@ -309,7 +388,7 @@ namespace CoinCollection
 
         private void Image_ComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if(Image_ComboBox.Items.Count == 0)
+            if (Image_ComboBox.Items.Count == 0)
             {
                 return;
             }
@@ -320,17 +399,17 @@ namespace CoinCollection
 
             Image_ComboBox.ToolTip = imageName;
 
-            Image_Name.Content = imageName;
+            Image_Name.Text = imageName;
 
-            if(Image_Viwer.Source.Width != 250 || Image_Viwer.Source.Height != 250)
+            if (Image_Viwer.Source.Width != 250 || Image_Viwer.Source.Height != 250)
             {
                 Image_Warning_Group.Visibility = Visibility.Visible;
 
-                Image_Warning.Content = $"Size not correct ({Math.Round(Image_Viwer.Source.Width)} X {Math.Round(Image_Viwer.Source.Height)})!!!";
+                Image_Warning.Text = $"Size not correct ({Math.Round(Image_Viwer.Source.Width)} X {Math.Round(Image_Viwer.Source.Height)})!!!";
             }
             else
             {
-                Image_Warning_Group.Visibility= Visibility.Hidden;
+                Image_Warning_Group.Visibility = Visibility.Hidden;
             }
 
             CheckModified(imageName, 7, ref Image_New);
@@ -349,7 +428,7 @@ namespace CoinCollection
 
         private void AddNewImage(object sender, RoutedEventArgs e)
         {
-            if(_openFileDialog.ShowDialog() == true)
+            if (_openFileDialog.ShowDialog() == true)
             {
                 string newImagePath = Path.Combine(_imagePath, _openFileDialog.SafeFileName);
 
@@ -363,13 +442,13 @@ namespace CoinCollection
 
                     using (SixLabors.ImageSharp.Image image = SixLabors.ImageSharp.Image.Load(_openFileDialog.FileName))
                     {
-                        if(image.Width != 250 || image.Height != 250)
+                        if (image.Width != 250 || image.Height != 250)
                         {
                             imageWarning = MessageBox.Show($"{_openFileDialog.SafeFileName} is not 250 x 250. Are you sure you want to use this image?", "Warning", MessageBoxButton.YesNo);
                         }
                     }
 
-                    if(imageWarning == MessageBoxResult.None || imageWarning == MessageBoxResult.Yes)
+                    if (imageWarning == MessageBoxResult.None || imageWarning == MessageBoxResult.Yes)
                     {
                         File.Copy(_openFileDialog.FileName, newImagePath);
                         UpdateCoinImages();
@@ -380,13 +459,13 @@ namespace CoinCollection
 
         private void AllowToSubmit()
         {
-            if(_serverDataContainer == null)
+            if (_serverDataContainer == null)
             {
                 Submit.IsEnabled = !string.IsNullOrEmpty(Name_Textbox.Text) && !string.IsNullOrEmpty(Description_Textbox.Text) && !string.IsNullOrEmpty(Retail_Value_Textbox.Text) && !_dupeName;
             }
             else
             {
-                Submit.IsEnabled = !string.IsNullOrEmpty(Name_Textbox.Text) && !string.IsNullOrEmpty(Description_Textbox.Text) && !string.IsNullOrEmpty(Retail_Value_Textbox.Text) && !_dupeName && 
+                Submit.IsEnabled = !string.IsNullOrEmpty(Name_Textbox.Text) && !string.IsNullOrEmpty(Description_Textbox.Text) && !string.IsNullOrEmpty(Retail_Value_Textbox.Text) && !_dupeName &&
                     (Name_New.IsVisible || Description_New.IsVisible || Calender_New.IsVisible || Amount_Made_New.IsVisible || Currency_Type_New.IsVisible || Original_Value_New.IsVisible || Retail_Value_New.IsVisible || Image_New.IsVisible);
             }
         }
@@ -401,21 +480,34 @@ namespace CoinCollection
 
             if (_serverDataContainer != null)
             {
-                success = GetMainWindow.TryExecuteNonQuery(new SQLCommandFactory().Update("Coin").Set(
+                success = GetMainWindow.TryExecuteNonQuery(
+                    new SQLCommandFactory().Update("Coin").Set(
                     new SetCommand("Name", Name_Textbox.Text),
                     new SetCommand("Description", Description_Textbox.Text),
-                    //new SetCommand(),
                     new SetCommand("Amount Made", Amount_Made_Textbox.Text),
                     new SetCommand("Currency Type", Currency_Type_ComboBox.Text),
                     new SetCommand("Original Value", Original_Value_ComboBox.Text),
                     new SetCommand("Retail Value", Retail_Value_Textbox.Text),
-                    new SetCommand("ImagePath", Image_ComboBox.Text)
-                    ).Where("Name", _serverDataContainer[0]).ToSQLCommand(), out sqlException, out exception) == 1;
+                    new SetCommand("ImagePath", Image_ComboBox.Text)).Where(
+                        "Name",
+                        _serverDataContainer[0]).ToSQLCommand(),
+                    out sqlException,
+                    out exception) == 1;
             }
             else
             {
-                success = GetMainWindow.TryExecuteNonQuery(new SQLCommandFactory().Insert_Into("Coin", Name_Textbox.Text, Description_Textbox.Text, Amount_Made_Textbox.Text, 
-                    Currency_Type_ComboBox.Text, Original_Value_ComboBox.Text, Retail_Value_Textbox.Text, Image_ComboBox.Text).ToSQLCommand(), out sqlException, out exception) == 1;
+                success = GetMainWindow.TryExecuteNonQuery(
+                    new SQLCommandFactory().Insert_Into(
+                        "Coin",
+                        Name_Textbox.Text,
+                        Description_Textbox.Text,
+                        Amount_Made_Textbox.Text,
+                        Currency_Type_ComboBox.Text,
+                        Original_Value_ComboBox.Text,
+                        Retail_Value_Textbox.Text,
+                        Image_ComboBox.Text).ToSQLCommand(),
+                    out sqlException,
+                    out exception) == 1;
             }
 
             if (success)
@@ -459,9 +551,9 @@ namespace CoinCollection
 
         private void DeselectTextBox(TextBoxCommand textBoxCommand)
         {
-            if(_serverDataContainer != null)
+            if (_serverDataContainer != null)
             {
-                if(textBoxCommand.TextInfo != _serverDataContainer[textBoxCommand.Number])
+                if (textBoxCommand.TextInfo != _serverDataContainer[textBoxCommand.Number])
                 {
                     textBoxCommand.Label.Visibility = Visibility.Visible;
                 }
@@ -486,7 +578,7 @@ namespace CoinCollection
         }
 
         /// <summary>
-        /// Checks if the coin name already exists in the SQL server depending on if the coin information is new or being modified
+        /// Checks if the coin name already exists in the SQL server depending on if the coin information is new or being modified.
         /// </summary>
         private void DupeNameCheck()
         {
@@ -516,49 +608,7 @@ namespace CoinCollection
         }
 
         /// <summary>
-        /// Checks if a combobox contains a certain item by checking a paramiter with in the item using predicate
-        /// </summary>
-        /// <typeparam name="T">Item type</typeparam>
-        /// <param name="comboBox">Combobox to check</param>
-        /// <param name="item">Item to check from using preficate</param>
-        /// <returns>True if the combobox contains the item</returns>
-        private static bool ComboBoxContains<T>(ComboBox comboBox, Predicate<T> item)
-        {
-            for(int i = 0; i < comboBox.Items.Count; i++)
-            {
-                if (item((T)comboBox.Items[i]))
-                {
-                    comboBox.SelectedIndex = i;
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        /// <summary>
-        /// Checks if a combobox contains a certain item
-        /// </summary>
-        /// <typeparam name="T">Item type</typeparam>
-        /// <param name="comboBox">Combobox to check</param>
-        /// <param name="item">Item to check from</param>
-        /// <returns>True if the combobox contains the item</returns>
-        private static bool ComboBoxContains<T>(ComboBox comboBox, T item)
-        {
-            for (int i = 0; i < comboBox.Items.Count; i++)
-            {
-                if (Equals(comboBox.Items[i], item))
-                {
-                    comboBox.SelectedIndex = i;
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        /// <summary>
-        /// Check if coin name already exists in the SQL server
+        /// Check if coin name already exists in the SQL server.
         /// </summary>
         private void IsDupeName()
         {
@@ -575,11 +625,11 @@ namespace CoinCollection
         }
 
         /// <summary>
-        /// Checks if the text has been modified and if its deferent than the original text, show the modified label
+        /// Checks if the text has been modified and if its deferent than the original text, show the modified label.
         /// </summary>
-        /// <param name="modifiedItem">Text that was modified</param>
-        /// <param name="index">Index to check the original text</param>
-        /// <param name="modifiedLabel">Show the modified lable if the text does not match the original text</param>
+        /// <param name="modifiedItem">Text that was modified.</param>
+        /// <param name="index">Index to check the original text.</param>
+        /// <param name="modifiedLabel">Show the modified lable if the text does not match the original text.</param>
         private void CheckModified(string modifiedItem, int index, ref Label modifiedLabel)
         {
             if (_serverDataContainer != null && IsLoaded)

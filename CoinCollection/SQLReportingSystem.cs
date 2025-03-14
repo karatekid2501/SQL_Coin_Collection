@@ -1,28 +1,34 @@
-﻿using System.Globalization;
+﻿// <copyright file="SQLReportingSystem.cs" company="Karatekid2501">
+// Copyright (c) Karatekid2501. All rights reserved.
+// </copyright>
+
+using System.Globalization;
 using System.IO;
 
 namespace CoinCollection
 {
     /// <summary>
-    /// Report system for the coin collection SQL
+    /// Report system for the coin collection SQL.
     /// </summary>
-    /// <param name="reportFolderName">Name of the folder that the reports are in</param>
-    /// <param name="isEnabled">Should reporting be enabled</param>
-    /// <param name="reportFrequency">The report frequencies</param>
+    /// <param name="reportFolderName">Name of the folder that the reports are in.</param>
+    /// <param name="isEnabled">Should reporting be enabled.</param>
+    /// <param name="reportFrequency">The report frequencies.</param>
     public class SQLReportingSystem(string reportFolderName = "", bool isEnabled = false, params string[] reportFrequency) : ReportingSystem(reportFolderName, isEnabled, reportFrequency)
     {
+        /// <inheritdoc/>
         protected override void UpdateFrequency()
         {
             _currentFrequency = App.GetInstance().ConfigEditor.Get<string>("Report Frequency", "Report Settings");
         }
 
+        /// <inheritdoc/>
         protected override void ReportSetUp()
         {
             Directory.CreateDirectory(Path.Combine(ReportFolderPath, "Daily"));
             Directory.CreateDirectory(Path.Combine(ReportFolderPath, "Weekly"));
             Directory.CreateDirectory(Path.Combine(ReportFolderPath, "Monthly"));
 
-            if(IsEnabled)
+            if (IsEnabled)
             {
                 switch (_currentFrequency)
                 {
@@ -30,15 +36,15 @@ namespace CoinCollection
                         FileCreation("Daily", $"{DateTime.Now.DayOfWeek} ({DateTime.Now.ToShortDateString().Replace('/', '_')})");
                         break;
                     case "Weekly":
-                        //https://weeknumber.co.uk/how-to/c-sharp
+                        // https://weeknumber.co.uk/how-to/c-sharp
                         FileCreation("Weekly", $"Week [{ISOWeek.GetWeekOfYear(DateTime.Today)}] ({DateTime.Today.AddDays(-(int)DateTime.Today.DayOfWeek).ToShortDateString().Replace('/', '_')})");
                         break;
                     case "Monthly":
-                        //https://stackoverflow.com/questions/6765441/how-to-get-complete-month-name-from-datetime
+                        // https://stackoverflow.com/questions/6765441/how-to-get-complete-month-name-from-datetime
                         FileCreation("Monthly", $"Month [{DateTime.Today.Month} ({DateTime.Today.ToString("MMMM", CultureInfo.InvariantCulture)})] ({DateTime.Today.Year})");
                         break;
                     default:
-                        throw new Exception($"{_currentFrequency} is not a frequency!!!");
+                        throw new ArgumentException($"{_currentFrequency} is not a frequency!!!");
                 }
             }
         }

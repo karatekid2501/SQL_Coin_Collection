@@ -1,99 +1,138 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿// <copyright file="EventTimer.cs" company="Karatekid2501">
+// Copyright (c) Karatekid2501. All rights reserved.
+// </copyright>
+
 using System.Timers;
 
 namespace CoinCollection
 {
+    /// <summary>
+    /// Type of event timer.
+    /// </summary>
     public enum EventTimerType
     {
-        milliseconds,
-        seconds,
-        minutes,
-        hours
+#pragma warning disable SA1602 // Enumeration items should be documented
+        Milliseconds,
+        Seconds,
+        Minutes,
+        Hours,
+#pragma warning restore SA1602 // Enumeration items should be documented
     }
 
-    public abstract class EventTimerActionBase
+    /// <summary>
+    /// Interface for the EventTimerAction classes.
+    /// </summary>
+    public interface IEventTimerActionBase
     {
-        public abstract void Invoke();
+        /// <summary>
+        /// Invoke the action.
+        /// </summary>
+        public void Invoke();
     }
 
-    public class EventTimerAction(Action action) : EventTimerActionBase
+    /// <summary>
+    /// Sets up an empty action to use once the timer is up.
+    /// </summary>
+    /// <param name="action">Action to trigger once the timer is up.</param>
+    public class EventTimerAction(Action action) : IEventTimerActionBase
     {
         private readonly Action _action = action;
 
-        public override void Invoke()
+        /// <inheritdoc/>
+        public void Invoke()
         {
             _action();
         }
     }
 
-    public class EventTimerActionGeneric<T>(T? key, Action<T?> action) : EventTimerActionBase where T : notnull
+    /// <summary>
+    /// Sets up an action that uses a generic to use once the timer is up.
+    /// </summary>
+    /// <typeparam name="T">Generic type to use for key and action.</typeparam>
+    /// <param name="key">Key to use in the action.</param>
+    /// <param name="action">Action to trigger once the timer is up.</param>
+    public class EventTimerActionGeneric<T>(T? key, Action<T?> action) : IEventTimerActionBase
+        where T : notnull
     {
         private readonly T? _key = key;
 
         private readonly Action<T?> _action = action;
 
-        public EventTimerActionGeneric(Action<T?> action) : this(default, action) { }
+        /// <summary>
+        /// Initializes a new instance of the <see cref="EventTimerActionGeneric{T}"/> class.
+        /// </summary>
+        /// <param name="action">Action to trigger once the timer is up.</param>
+        public EventTimerActionGeneric(Action<T?> action)
+            : this(default, action)
+        {
+        }
 
-        public override void Invoke()
+        /// <inheritdoc/>
+        public void Invoke()
         {
             _action(_key);
         }
     }
 
-
+    /// <summary>
+    /// Timer to trigger event once the timer is up.
+    /// </summary>
     internal class EventTimer : IDisposable
     {
         private readonly System.Timers.Timer _timer;
 
-        private readonly EventTimerActionBase[] _actions;
+        private readonly IEventTimerActionBase[] _actions;
 
         private readonly double _amount;
 
-        public EventTimer(double amount = 1000, EventTimerType eventTimerType = EventTimerType.milliseconds, bool timeLineup = true, params EventTimerActionBase[] actions)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="EventTimer"/> class.
+        /// </summary>
+        /// <param name="amount">How much time the timer will count down from.</param>
+        /// <param name="eventTimerType">Type of timer to use.</param>
+        /// <param name="timeLineup">Should the timer line up to exact or start immediately.</param>
+        /// <param name="actions">All actions that will take place when the timer is up.</param>
+        public EventTimer(double amount = 1000, EventTimerType eventTimerType = EventTimerType.Milliseconds, bool timeLineup = true, params IEventTimerActionBase[] actions)
         {
             _timer = new()
             {
-                AutoReset = false
+                AutoReset = false,
             };
 
-            if (eventTimerType == EventTimerType.milliseconds && amount < 1000)
+            if (eventTimerType == EventTimerType.Milliseconds && amount < 1000)
             {
                 throw new ArgumentException("Millisecond amount can not be any lower than a second");
             }
 
-            switch(eventTimerType)
+            switch (eventTimerType)
             {
-                case EventTimerType.milliseconds:
+                case EventTimerType.Milliseconds:
                     _amount = amount;
                     break;
-                case EventTimerType.seconds:
+                case EventTimerType.Seconds:
                     _amount = TimeSpan.FromSeconds(amount).TotalMilliseconds;
                     break;
-                case EventTimerType.minutes:
+                case EventTimerType.Minutes:
                     _amount = TimeSpan.FromMinutes(amount).TotalMilliseconds;
                     break;
-                case EventTimerType.hours:
+                case EventTimerType.Hours:
                     _amount = TimeSpan.FromHours(amount).TotalMilliseconds;
                     break;
             }
 
             double adjustedTime = _amount;
 
-            if(timeLineup)
+            if (timeLineup)
             {
-                //TODO: Do some more tests
-                if(eventTimerType == EventTimerType.minutes || eventTimerType == EventTimerType.hours)
+                // TODO: Do some more tests
+                if (eventTimerType == EventTimerType.Minutes || eventTimerType == EventTimerType.Hours)
                 {
                     DateTime now = DateTime.Now;
                     int alignment = (int)amount;
 
                     DateTime nextAlignment;
 
-                    if (eventTimerType == EventTimerType.minutes)
+                    if (eventTimerType == EventTimerType.Minutes)
                     {
                         int alignmentMin = ((now.Minute / alignment) + 1) * alignment;
 
@@ -128,9 +167,26 @@ namespace CoinCollection
             _timer.Enabled = true;
         }
 
+        /// <inheritdoc/>
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
+        /// Disposes of variables when class is finished with.
+        /// </summary>
+        /// <param name="disposing">Should the class dispose when this method is called.</param>
+        protected virtual void Dispose(bool disposing)
+        {
+            _timer.Stop();
+            _timer.Dispose();
+        }
+
         private void EventTigger(object? sender, ElapsedEventArgs e)
         {
-            if(!_timer.AutoReset)
+            if (!_timer.AutoReset)
             {
                 _timer.Stop();
                 _timer.Interval = _amount;
@@ -142,12 +198,6 @@ namespace CoinCollection
             {
                 action.Invoke();
             }
-        }
-
-        public void Dispose()
-        {
-            _timer.Stop();
-            _timer.Dispose();
         }
     }
 }

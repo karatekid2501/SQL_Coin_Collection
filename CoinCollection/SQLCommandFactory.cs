@@ -1,19 +1,21 @@
-﻿using Microsoft.Data.SqlClient;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
-using System;
-using System.Data.Common;
-using System.Diagnostics;
+﻿// <copyright file="SQLCommandFactory.cs" company="Karatekid2501">
+// Copyright (c) Karatekid2501. All rights reserved.
+// </copyright>
+
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Text;
-using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
+using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 
 namespace CoinCollection
 {
     /// <summary>
-    /// Types of operators that can be used in an SQL command
+    /// Types of operators that can be used in an SQL command.
     /// </summary>
     public enum OperatorTypes
     {
+#pragma warning disable SA1602 // Enumeration items should be documented
         Add,
         Subtract,
         Multiply,
@@ -35,103 +37,152 @@ namespace CoinCollection
         Module_Equals,
         Bitwise_AND_Equals,
         Bitwise_Exclusive_Equals,
-        Bitwise_OR_Equals
+        Bitwise_OR_Equals,
+#pragma warning restore SA1602 // Enumeration items should be documented
     }
 
+    /// <summary>
+    /// Size of the value.
+    /// </summary>
     public enum FileSizeType
     {
+#pragma warning disable SA1602 // Enumeration items should be documented
         KB,
         MB,
-        GB
+        GB,
+#pragma warning restore SA1602 // Enumeration items should be documented
     }
 
+    /// <summary>
+    /// Selection type for the select method.
+    /// </summary>
     public enum SelectType
     {
+#pragma warning disable SA1602 // Enumeration items should be documented
         Empty,
         All,
         Name,
-        Value
+        Value,
+#pragma warning restore SA1602 // Enumeration items should be documented
     }
 
-    public struct SetCommand(string nameParam, object value)
+    /// <summary>
+    /// Used in the Set SQL command to set values in the current SQL database.
+    /// </summary>
+    /// <param name="nameParam">Name of the parameter to set.</param>
+    /// <param name="value">Value to set the parameter to.</param>
+    public class SetCommand
     {
-        public string NameParam { get; set; } = nameParam;
+        /// <summary>
+        /// Initializes a new instance of the <see cref="SetCommand"/> class.
+        /// </summary>
+        /// <param name="nameParam">Name of the parameter.</param>
+        /// <param name="value">The value to use.</param>
+        public SetCommand(string nameParam, object value)
+        {
+            NameParam = nameParam;
 
-        public object Value { get; set; } = value;
+            Value = value;
+        }
+
+        private SetCommand()
+        {
+        }
+
+        /// <summary>
+        /// Gets the name of the parameter.
+        /// </summary>
+        public string NameParam { get; private set; } = string.Empty;
+
+        /// <summary>
+        /// Gets the new value to set the parameter to.
+        /// </summary>
+        public object Value { get; private set; } = null!;
     }
 
-    public abstract class InservtValuesBase(string name)
+    /// <summary>
+    /// Base class for the insert valus.
+    /// </summary>
+    /// <param name="name">Parameter name to insert value into.</param>
+    public abstract class InsertValuesBase(string name)
     {
-        public string Name { get; set; } = name;
+        /// <summary>
+        /// Gets the name of the parameter.
+        /// </summary>
+        public string Name { get; private set; } = name;
 
+        /// <summary>
+        /// Value to get from children classes.
+        /// </summary>
+        /// <returns>The value stored in the children classes.</returns>
         public abstract object Value();
     }
 
-    public class InsertValues<T>(string name, T value) : InservtValuesBase(name) where T : notnull
+    /// <summary>
+    /// Inserts a value into a parameter that is stored in a SQL database table.
+    /// </summary>
+    /// <typeparam name="T">Type of the value to use.</typeparam>
+    /// <param name="name">Parameter name to insert value into.</param>
+    /// <param name="value">Value to use to insert using the paramemter.</param>
+    public class InsertValues<T>(string name, T value) : InsertValuesBase(name)
+        where T : notnull
     {
         private readonly T _value = value;
 
+        /// <inheritdoc/>
         public override object Value()
         {
             return _value;
         }
     }
 
+    /// <summary>
+    /// Size of the file.
+    /// </summary>
     public class FileSize
     {
-        public string Size {  get; private set; }
-
+        /// <summary>
+        /// Initializes a new instance of the <see cref="FileSize"/> class.
+        /// </summary>
         public FileSize()
         {
             Size = "UNLIMITED";
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="FileSize"/> class.
+        /// </summary>
+        /// <param name="size">Size of the file.</param>
+        /// <param name="fst">File type of size.</param>
         public FileSize(int size, FileSizeType fst = FileSizeType.MB)
         {
             Size = $"{size}{fst}";
         }
+
+        /// <summary>
+        /// Gets size of the file.
+        /// </summary>
+        public string Size { get; private set; }
     }
 
     /// <summary>
-    /// Simple way to build SQL commands
-    /// TODO: Finish off commands
+    /// Simple way to build SQL commands.
+    /// TODO: Finish off commands.
     /// </summary>
     internal class SQLCommandFactory
     {
-        //The SQL command to build the command string
+        // The SQL command to build the command string
         private readonly StringBuilder _sqlCommand = new();
 
-        //Parameters for the SQL command
+        // Parameters for the SQL command
         private readonly List<SqlParameter> _sqlParameters = [];
 
-
-        /*public SQLCommandFactory Select(string columnName = "*", bool asValue = false)
-        {
-            if(string.IsNullOrEmpty(columnName))
-            {
-                _sqlCommand.Append($"SELECT ");
-            }
-            else
-            {
-                if(asValue)
-                {
-                    _sqlCommand.Append($"SELECT {columnName} ");
-                }
-                else
-                {
-                    _sqlCommand.Append($"SELECT '{columnName}' ");
-                }
-            }
-
-            return this;
-        }*/
-
         /// <summary>
-        /// The Select SQL command for selecting columns
+        /// The Select SQL command for selecting columns.
         /// </summary>
-        /// <param name="selectType">Type of select command</param>
-        /// <param name="value">Used for both SelectType.Name and SelectType.Value</param>
-        /// <returns>Altered version of SQLCommandFactory</returns>
+        /// <param name="selectType">Type of select command.</param>
+        /// <param name="value">Used for both SelectType.Name and SelectType.Value.</param>
+        /// <returns>Altered version of SQLCommandFactory.</returns>
         public SQLCommandFactory Select(SelectType selectType = SelectType.All, string value = "")
         {
             if (selectType == SelectType.Empty)
@@ -155,38 +206,35 @@ namespace CoinCollection
         }
 
         /// <summary>
-        /// The Select SQL command for selecting values
+        /// The Select SQL command for selecting values.
         /// </summary>
-        /// <typeparam name="T">Type of parameter value</typeparam>
-        /// <param name="value">Value of the parameter</param>
-        /// <returns>Altered version of SQLCommandFactory</returns>
-        public SQLCommandFactory Select_Value<T>(T value) where T : notnull
+        /// <typeparam name="T">Type of parameter value.</typeparam>
+        /// <param name="value">Value of the parameter.</param>
+        /// <returns>Altered version of SQLCommandFactory.</returns>
+        public SQLCommandFactory Select_Value<T>(T value)
+            where T : notnull
         {
-            /*string pName = $"@param{_sqlParameters.Count}";
-            _sqlCommand.Append($"SELECT {pName} ");
-            _sqlParameters.Add(new SqlParameter(pName, value));*/
-
             AddParam(value, "SELECT ", " ");
 
             return this;
         }
 
         /// <summary>
-        /// The Update SQL command
+        /// The Update SQL command.
         /// </summary>
-        /// <param name="columnName">Coloumn name to select</param>
-        /// <returns>Altered version of SQLCommandFactory</returns>
+        /// <param name="columnName">Coloumn name to select.</param>
+        /// <returns>Altered version of SQLCommandFactory.</returns>
         public SQLCommandFactory Update(string columnName)
         {
             _sqlCommand.Append($"UPDATE {columnName} ");
-            
+
             return this;
         }
 
         /// <summary>
-        /// The Delete SQL command
+        /// The Delete SQL command.
         /// </summary>
-        /// <returns>Altered version of SQLCommandFactory</returns>
+        /// <returns>Altered version of SQLCommandFactory.</returns>
         public SQLCommandFactory Delete()
         {
             _sqlCommand.Append("DELETE ");
@@ -195,27 +243,23 @@ namespace CoinCollection
         }
 
         /// <summary>
-        /// The Insert Into SQL command
+        /// The Insert Into SQL command.
         /// </summary>
-        /// <param name="columnName">Column name to select</param>
-        /// <param name="values">Values to modify in the selected column</param>
-        /// <returns>Altered version of SQLCommandFactory</returns>
-        /// <exception cref="ArgumentException"></exception>
+        /// <param name="columnName">Column name to select.</param>
+        /// <param name="values">Values to modify in the selected column.</param>
+        /// <returns>Altered version of SQLCommandFactory.</returns>
+        /// <exception cref="ArgumentException">No values were passed.</exception>
         public SQLCommandFactory Insert_Into(string columnName, params string[] values)
         {
-            if(values.Length == 0)
+            if (values.Length == 0)
             {
                 throw new ArgumentException("Insert into values are not set!!!");
             }
 
             _sqlCommand.Append($"INSERT INTO {columnName} VALUES (");
 
-            foreach(string value in values)
+            foreach (string value in values)
             {
-                /*string pName = $"@param{_sqlParameters.Count}";
-                _sqlCommand.Append($"{pName}, ");
-                _sqlParameters.Add(new SqlParameter(pName, value));*/
-
                 AddParam(value, string.Empty, ", ");
             }
 
@@ -226,7 +270,13 @@ namespace CoinCollection
             return this;
         }
 
-        public SQLCommandFactory Insert_Into(string tableName, params InservtValuesBase[] values)
+        /// <summary>
+        /// The Insert Into SQL command.
+        /// </summary>
+        /// <param name="tableName">Table name to select.</param>
+        /// <param name="values">Values to modify in the selected table.</param>
+        /// <returns>Altered version of SQLCommandFactory (Not implemented).</returns>
+        public SQLCommandFactory Insert_Into(string tableName, params InsertValuesBase[] values)
         {
             if (values.Length == 0)
             {
@@ -235,7 +285,7 @@ namespace CoinCollection
 
             _sqlCommand.Append($"INSERT INTO {tableName} (");
 
-            for(int i = 0; i < values.Length; i++)
+            for (int i = 0; i < values.Length; i++)
             {
                 _sqlCommand.Append($"{values[i].Name}");
 
@@ -262,11 +312,20 @@ namespace CoinCollection
             return this;
         }
 
+        /// <summary>
+        /// The Alter Database SQL command (Not Implemented).
+        /// </summary>
+        /// <returns>Altered version of SQLCommandFactory.</returns>
         public SQLCommandFactory Alter_Database()
         {
             return this;
         }
 
+        /// <summary>
+        /// The Drop Database SQL command.
+        /// </summary>
+        /// <param name="dataBaseName">Name of the data base to drop (Delete).</param>
+        /// <returns>Altered version of SQLCommandFactory.</returns>
         public SQLCommandFactory Drop_Database(string dataBaseName)
         {
             _sqlCommand.Append($"DROP DATABASE [{dataBaseName}] ");
@@ -274,21 +333,38 @@ namespace CoinCollection
             return this;
         }
 
+        /// <summary>
+        /// The Create Index SQL command (Not Implemented).
+        /// </summary>
+        /// <returns>Altered version of SQLCommandFactory.</returns>
         public SQLCommandFactory Create_Index()
         {
             return this;
         }
 
+        /// <summary>
+        /// The Drop Index SQL command (Not Implemented).
+        /// </summary>
+        /// <returns>Altered version of SQLCommandFactory.</returns>
         public SQLCommandFactory Drop_Index()
         {
             return this;
         }
 
+        /// <summary>
+        /// The Create Index SQL command (Not Implemented).
+        /// </summary>
+        /// <returns>Altered version of SQLCommandFactory.</returns>
         public SQLCommandFactory Primary_Key()
         {
             return this;
         }
 
+        /// <summary>
+        /// The Create Database SQL command.
+        /// </summary>
+        /// <param name="databaseName">Name of the data base to create.</param>
+        /// <returns>Altered version of SQLCommandFactory.</returns>
         public SQLCommandFactory Create_Database(string databaseName)
         {
             _sqlCommand.Append($"CREATE DATABASE {databaseName}; ");
@@ -296,26 +372,66 @@ namespace CoinCollection
             return this;
         }
 
+        /// <summary>
+        /// The Create Database SQL command.
+        /// </summary>
+        /// <param name="databaseName">Name of the database.</param>
+        /// <param name="name">Name of the Table.</param>
+        /// <returns>Altered version of SQLCommandFactory.</returns>
         public SQLCommandFactory Create_Database(string databaseName, string name)
         {
             return Create_Database(databaseName, name, $"{Path.Combine(Directory.GetCurrentDirectory(), name)}", new FileSize(8), new FileSize(), new FileSize(64, FileSizeType.KB));
         }
 
+        /// <summary>
+        /// The Create Database SQL command.
+        /// </summary>
+        /// <param name="databaseName">Name of the database.</param>
+        /// <param name="name">Name of the Table.</param>
+        /// <param name="fileName">Name of the file.</param>
+        /// <returns>Altered version of SQLCommandFactory.</returns>
         public SQLCommandFactory Create_Database(string databaseName, string name, string fileName)
         {
             return Create_Database(databaseName, name, fileName, new FileSize(8), new FileSize(), new FileSize(64, FileSizeType.KB));
         }
 
+        /// <summary>
+        /// The Create Database SQL command.
+        /// </summary>
+        /// <param name="databaseName">Name of the database.</param>
+        /// <param name="name">Name of the Table.</param>
+        /// <param name="fileName">Name of the file.</param>
+        /// <param name="size">Starting size of the file.</param>
+        /// <returns>Altered version of SQLCommandFactory.</returns>
         public SQLCommandFactory Create_Database(string databaseName, string name, string fileName, FileSize size)
         {
             return Create_Database(databaseName, name, fileName, size, new FileSize(), new FileSize(64, FileSizeType.KB));
         }
 
+        /// <summary>
+        /// The Create Database SQL command.
+        /// </summary>
+        /// <param name="databaseName">Name of the database.</param>
+        /// <param name="name">Name of the Table.</param>
+        /// <param name="fileName">Name of the file.</param>
+        /// <param name="size">Starting size of the file.</param>
+        /// <param name="maxSize">Max size of the file.</param>
+        /// <returns>Altered version of SQLCommandFactory.</returns>
         public SQLCommandFactory Create_Database(string databaseName, string name, string fileName, FileSize size, FileSize maxSize)
         {
             return Create_Database(databaseName, name, fileName, size, maxSize, new FileSize(64, FileSizeType.KB));
         }
 
+        /// <summary>
+        /// The Create Database SQL command.
+        /// </summary>
+        /// <param name="databaseName">Name of the database.</param>
+        /// <param name="name">Name of the Table.</param>
+        /// <param name="fileName">Name of the file.</param>
+        /// <param name="size">Starting size of the file.</param>
+        /// <param name="maxSize">Max size of the file.</param>
+        /// <param name="filegrowth">How much the file will grow.</param>
+        /// <returns>Altered version of SQLCommandFactory.</returns>
         public SQLCommandFactory Create_Database(string databaseName, string name, string fileName, FileSize size, FileSize maxSize, FileSize filegrowth)
         {
             _sqlCommand.Append($"CREATE DATABASE [{databaseName}] ON PRIMARY (");
@@ -325,12 +441,7 @@ namespace CoinCollection
             if (!fileName.EndsWith(".mdf"))
             {
                 fileName += ".mdf";
-                //fileName = $"[{fileName}.mdf]";
             }
-            /*else
-            {
-                fileName = $"[{fileName}]";
-            }*/
 
             _sqlCommand.Append($"FILENAME = '{fileName}', ");
 
@@ -341,26 +452,61 @@ namespace CoinCollection
             return this;
         }
 
+        /// <summary>
+        /// The Log On SQL command.
+        /// </summary>
+        /// <param name="name">Name of the Log.</param>
+        /// <returns>Altered version of SQLCommandFactory.</returns>
         public SQLCommandFactory Log_On(string name)
         {
             return Log_On(name, $"{Path.Combine(Directory.GetCurrentDirectory(), name)}", new FileSize(8), new FileSize(), new FileSize(64, FileSizeType.KB));
         }
 
+        /// <summary>
+        /// The Log On SQL command.
+        /// </summary>
+        /// <param name="name">Name of the Log.</param>
+        /// <param name="fileName">Name of the file.</param>
+        /// <returns>Altered version of SQLCommandFactory.</returns>
         public SQLCommandFactory Log_On(string name, string fileName)
         {
             return Log_On(name, fileName, new FileSize(8), new FileSize(), new FileSize(64, FileSizeType.KB));
         }
 
+        /// <summary>
+        /// The Log On SQL command.
+        /// </summary>
+        /// <param name="name">Name of the Log.</param>
+        /// <param name="fileName">Name of the file.</param>
+        /// <param name="size">Size of the file.</param>
+        /// <returns>Altered version of SQLCommandFactory.</returns>
         public SQLCommandFactory Log_On(string name, string fileName, FileSize size)
         {
             return Log_On(name, fileName, size, new FileSize(), new FileSize(64, FileSizeType.KB));
         }
 
+        /// <summary>
+        /// The Log On SQL command.
+        /// </summary>
+        /// <param name="name">Name of the Log.</param>
+        /// <param name="fileName">Name of the file.</param>
+        /// <param name="size">Starting size of the file.</param>
+        /// <param name="maxSize">Max size of the file.</param>
+        /// <returns>Altered version of SQLCommandFactory.</returns>
         public SQLCommandFactory Log_On(string name, string fileName, FileSize size, FileSize maxSize)
         {
             return Log_On(name, fileName, size, maxSize, new FileSize(64, FileSizeType.KB));
         }
 
+        /// <summary>
+        /// The Log On SQL command.
+        /// </summary>
+        /// <param name="name">Name of the Log.</param>
+        /// <param name="fileName">Name of the file.</param>
+        /// <param name="size">Starting size of the file.</param>
+        /// <param name="maxSize">Max size of the file.</param>
+        /// <param name="filegrowth">How much the file will grow.</param>
+        /// <returns>Altered version of SQLCommandFactory.</returns>
         public SQLCommandFactory Log_On(string name, string fileName, FileSize size, FileSize maxSize, FileSize filegrowth)
         {
             _sqlCommand.Append($"LOG ON (");
@@ -370,12 +516,7 @@ namespace CoinCollection
             if (!fileName.EndsWith(".ldf"))
             {
                 fileName += ".ldf";
-                //fileName = $"[{fileName}.ldf]";
             }
-            /*else
-            {
-                fileName = $"[{fileName}]";
-            }*/
 
             _sqlCommand.Append($"FILENAME = '{fileName}', ");
 
@@ -386,6 +527,11 @@ namespace CoinCollection
             return this;
         }
 
+        /// <summary>
+        /// The Create Table SQL command.
+        /// </summary>
+        /// <param name="table">Name of the table to create.</param>
+        /// <returns>Altered version of SQLCommandFactory.</returns>
         public SQLCommandFactory Create_Table(string table)
         {
             _sqlCommand.Append($"CREATE TABLE {table}; ");
@@ -394,9 +540,9 @@ namespace CoinCollection
         }
 
         /// <summary>
-        /// The And SQL command
+        /// The And SQL command.
         /// </summary>
-        /// <returns>Altered version of SQLCommandFactory</returns>
+        /// <returns>Altered version of SQLCommandFactory.</returns>
         public SQLCommandFactory And()
         {
             _sqlCommand.Append("AND ");
@@ -405,23 +551,24 @@ namespace CoinCollection
         }
 
         /// <summary>
-        /// The Not SQL command
+        /// The Not SQL command.
         /// </summary>
-        /// <param name="condition">Value to check in the SQL server</param>
-        /// <param name="value">Value to compare</param>
-        /// <param name="oTypes">Operator Types</param>
-        /// <returns>Altered version of SQLCommandFactory</returns>
+        /// <param name="condition">Value to check in the SQL server.</param>
+        /// <param name="value">Value to compare.</param>
+        /// <param name="oTypes">Operator Types.</param>
+        /// <returns>Altered version of SQLCommandFactory.</returns>
         public SQLCommandFactory Not(string condition, object value, OperatorTypes oTypes = OperatorTypes.Equal_To)
         {
-            /*string pName = $"@param{_sqlParameters.Count}";
-            _sqlCommand.Append($"NOT {condition} {OperatorConvert(oTypes)} {pName} ");
-            _sqlParameters.Add(new SqlParameter(pName, value));*/
-
             AddParam(value, $"NOT {condition} {OperatorConvert(oTypes)} ", " ");
 
             return this;
         }
 
+        /// <summary>
+        /// The As SQL command.
+        /// </summary>
+        /// <param name="value">Value to use.</param>
+        /// <returns>Altered version of SQLCommandFactory.</returns>
         public SQLCommandFactory As(string value)
         {
             _sqlCommand.Append($"AS {value} ");
@@ -430,10 +577,10 @@ namespace CoinCollection
         }
 
         /// <summary>
-        /// The From SQL command
+        /// The From SQL command.
         /// </summary>
-        /// <param name="tableName">Name of the table</param>
-        /// <returns>Altered version of SQLCommandFactory</returns>
+        /// <param name="tableName">Name of the table.</param>
+        /// <returns>Altered version of SQLCommandFactory.</returns>
         public SQLCommandFactory From(string tableName)
         {
             _sqlCommand.Append($"FROM {tableName} ");
@@ -442,103 +589,107 @@ namespace CoinCollection
         }
 
         /// <summary>
-        /// The Where SQL command
+        /// The Where SQL command.
         /// </summary>
-        /// <param name="condition">Value to check in the SQL server</param>
-        /// <param name="value">Value to compare</param>
-        /// <param name="oTypes">Operator Types</param>
-        /// <returns>Altered version of SQLCommandFactory</returns>
+        /// <param name="condition">Value to check in the SQL server.</param>
+        /// <param name="value">Value to compare.</param>
+        /// <param name="oTypes">Operator Types.</param>
+        /// <returns>Altered version of SQLCommandFactory.</returns>
         public SQLCommandFactory Where(string condition, object value, OperatorTypes oTypes = OperatorTypes.Equal_To)
         {
-            /*string pName = $"@param{_sqlParameters.Count}";
-            _sqlCommand.Append($"WHERE {condition} {OperatorConvert(oTypes)} {pName} ");
-            _sqlParameters.Add(new SqlParameter(pName, value));*/
-
             AddParam(value, $"WHERE {condition} {OperatorConvert(oTypes)} ", " ");
 
             return this;
         }
 
+        /// <summary>
+        /// The AVG SQL command (Not implemented).
+        /// </summary>
+        /// <returns>Altered version of SQLCommandFactory.</returns>
         public SQLCommandFactory AVG()
         {
             return this;
         }
 
+        /// <summary>
+        /// The Between SQL command (Not implemented).
+        /// </summary>
+        /// <returns>Altered version of SQLCommandFactory.</returns>
         public SQLCommandFactory Between()
         {
             return this;
         }
 
+        /// <summary>
+        /// The Case SQL command (Not implemented).
+        /// </summary>
+        /// <returns>Altered version of SQLCommandFactory.</returns>
         public SQLCommandFactory Case()
         {
             return this;
         }
 
-        /*public SQLCommandFactory Count(string number = "*")
-        {
-            if (string.IsNullOrEmpty(number) || number == "*")
-            {
-                string pName = $"@param{_sqlParameters.Count}";
-                _sqlCommand.Append($"COUNT ({pName}) ");
-                _sqlParameters.Add(new SqlParameter(pName, number));
-            }
-            else if (int.TryParse(number, out int numberInt))
-            {
-                string pName = $"@param{_sqlParameters.Count}";
-                _sqlCommand.Append($"COUNT ({pName}) ");
-                _sqlParameters.Add(new SqlParameter(pName, numberInt));
-            }
-            else
-            {
-                throw new Exception($"{number} is not a number!!!");
-            }
-
-            return this;
-        }*/
-
         /// <summary>
-        /// The Count SQL command
+        /// The Count SQL command.
         /// </summary>
-        /// <param name="value">Value to count from</param>
-        /// <returns>Altered version of SQLCommandFactory</returns>
+        /// <param name="value">Value to count from.</param>
+        /// <returns>Altered version of SQLCommandFactory.</returns>
         public SQLCommandFactory Count(string value = "*")
         {
             AddParam(value, "COUNT (", ") ");
 
-            //_sqlCommand.Append($"COUNT ({value}) ");
-
             return this;
         }
 
+        /// <summary>
+        /// The Group By SQL command (Not implemented).
+        /// </summary>
+        /// <returns>Altered version of SQLCommandFactory.</returns>
         public SQLCommandFactory Group_By()
         {
             return this;
         }
 
+        /// <summary>
+        /// The Is Null SQL command (Not Implemented).
+        /// </summary>
+        /// <returns>Altered version of SQLCommandFactory.</returns>
         public SQLCommandFactory Having()
         {
             return this;
         }
 
+        /// <summary>
+        /// The Inner Join SQL command (Not implemented).
+        /// </summary>
+        /// <returns>Altered version of SQLCommandFactory.</returns>
         public SQLCommandFactory Inner_Join()
         {
             return this;
         }
 
+        /// <summary>
+        /// The Insert SQL command (Not implemented).
+        /// </summary>
+        /// <returns>Altered version of SQLCommandFactory.</returns>
         public SQLCommandFactory Insert()
         {
             return this;
         }
 
+        /// <summary>
+        /// The Is Null SQL command (Not implemented).
+        /// </summary>
+        /// <returns>Altered version of SQLCommandFactory.</returns>
         public SQLCommandFactory Is_Null()
         {
             return this;
         }
 
         /// <summary>
-        /// The Is Not Null SQL command
+        /// The Is Not Null SQL command.
         /// </summary>
-        /// <returns>Altered version of SQLCommandFactory</returns>
+        /// <returns>Altered version of SQLCommandFactory.</returns>
         public SQLCommandFactory Is_Not_Null()
         {
             _sqlCommand.Append("IS NOT NULL ");
@@ -546,65 +697,121 @@ namespace CoinCollection
             return this;
         }
 
+        /// <summary>
+        /// The Like SQL command (Not implemented).
+        /// </summary>
+        /// <returns>Altered version of SQLCommandFactory.</returns>
         public SQLCommandFactory Like()
         {
             return this;
         }
 
+        /// <summary>
+        /// The Limit SQL command (Not implemented).
+        /// </summary>
+        /// <returns>Altered version of SQLCommandFactory.</returns>
         public SQLCommandFactory Limit()
         {
             return this;
         }
 
+        /// <summary>
+        /// The Mex SQL command (Not implemented).
+        /// </summary>
+        /// <returns>Altered version of SQLCommandFactory.</returns>
         public SQLCommandFactory Max()
         {
             return this;
         }
 
+        /// <summary>
+        /// The Min SQL command (Not implemented).
+        /// </summary>
+        /// <returns>Altered version of SQLCommandFactory.</returns>
         public SQLCommandFactory Min()
         {
             return this;
         }
 
+        /// <summary>
+        /// The Or SQL command (Not implemented).
+        /// </summary>
+        /// <returns>Altered version of SQLCommandFactory.</returns>
         public SQLCommandFactory Or()
         {
             return this;
         }
 
-        public SQLCommandFactory Order_By()
+        /// <summary>
+        /// The Order By SQL command (Not implemented).
+        /// </summary>
+        /// <param name="value">Value to use.</param>
+        /// <param name="descending">Should the order be descending.</param>
+        /// <returns>Altered version of SQLCommandFactory.</returns>
+        public SQLCommandFactory Order_By(string value, bool descending = true)
         {
+            _sqlCommand.Append($"ORDER BY {value} ");
+
+            if (descending)
+            {
+                _sqlCommand.Append("DESC ");
+            }
+
             return this;
         }
 
+        /// <summary>
+        /// The Outer Join SQL command (Not implemented).
+        /// </summary>
+        /// <returns>Altered version of SQLCommandFactory.</returns>
         public SQLCommandFactory Outer_Join()
         {
             return this;
         }
 
+        /// <summary>
+        /// The Round SQL command (Not implemented).
+        /// </summary>
+        /// <returns>Altered version of SQLCommandFactory.</returns>
         public SQLCommandFactory Round()
         {
             return this;
         }
 
+        /// <summary>
+        /// The Select Distinct SQL command (Not implemented).
+        /// </summary>
+        /// <returns>Altered version of SQLCommandFactory.</returns>
         public SQLCommandFactory Select_Distinct()
         {
             return this;
         }
 
+        /// <summary>
+        /// The Sum SQL command (Not implemented).
+        /// </summary>
+        /// <returns>Altered version of SQLCommandFactory.</returns>
         public SQLCommandFactory Sum()
         {
             return this;
         }
 
-        public SQLCommandFactory With()
+        /// <summary>
+        /// The With SQL command.
+        /// </summary>
+        /// <param name="value">Value to use.</param>
+        /// <returns>Altered version of SQLCommandFactory.</returns>
+        public SQLCommandFactory With(string value)
         {
+            _sqlCommand.Append($"WITH {value} ");
+
             return this;
         }
 
         /// <summary>
-        /// The Else SQL command
+        /// The Else SQL command.
         /// </summary>
-        /// <returns>Altered version of SQLCommandFactory</returns>
+        /// <returns>Altered version of SQLCommandFactory.</returns>
         public SQLCommandFactory Else()
         {
             _sqlCommand.Append("ELSE ");
@@ -613,22 +820,14 @@ namespace CoinCollection
         }
 
         /// <summary>
-        /// The Col Length SQL command
+        /// The Col Length SQL command.
         /// </summary>
-        /// <param name="table"></param>
-        /// <param name="column"></param>
-        /// <returns>Altered version of SQLCommandFactory</returns>
+        /// <param name="table">Table to use.</param>
+        /// <param name="column">Column in the table to use.</param>
+        /// <returns>Altered version of SQLCommandFactory.</returns>
         public SQLCommandFactory COL_LENGTH(string table, string column)
         {
             _sqlCommand.Append("COL_LENGTH (");
-
-            /*string pName = $"@param{_sqlParameters.Count}";
-            _sqlCommand.Append($"{pName}, ");
-            _sqlParameters.Add(new SqlParameter(pName, table));
-
-            pName = $"@param{_sqlParameters.Count}";
-            _sqlCommand.Append($"{pName}");
-            _sqlParameters.Add(new SqlParameter(pName, column));*/
 
             AddParam(table, string.Empty, ", ");
             AddParam(column);
@@ -639,9 +838,9 @@ namespace CoinCollection
         }
 
         /// <summary>
-        /// The If SQL command
+        /// The If SQL command.
         /// </summary>
-        /// <returns>Altered version of SQLCommandFactory</returns>
+        /// <returns>Altered version of SQLCommandFactory.</returns>
         public SQLCommandFactory If()
         {
             _sqlCommand.Append("IF ");
@@ -650,10 +849,10 @@ namespace CoinCollection
         }
 
         /// <summary>
-        /// The Exist SQL command
+        /// The Exist SQL command.
         /// </summary>
-        /// <param name="command">Command to use in the Exist brackets</param>
-        /// <returns>Altered version of SQLCommandFactory</returns>
+        /// <param name="command">Command to use in the Exist brackets.</param>
+        /// <returns>Altered version of SQLCommandFactory.</returns>
         public SQLCommandFactory Exists(SQLCommandFactory command)
         {
             string temp = command._sqlCommand.ToString();
@@ -662,7 +861,7 @@ namespace CoinCollection
 
             _sqlCommand.Append("EXISTS (");
 
-            for(int i = 0; i < words.Length; i += 2)
+            for (int i = 0; i < words.Length; i += 2)
             {
                 string pName = $"@param{_sqlParameters.Count}";
                 _sqlCommand.Append($"{words[i]}{pName}");
@@ -679,13 +878,13 @@ namespace CoinCollection
         }
 
         /// <summary>
-        /// The Use SQL command
+        /// The Use SQL command.
         /// </summary>
-        /// <param name="dataBaseName">Name of database to use</param>
-        /// <returns>Altered version of SQLCommandFactory</returns>
+        /// <param name="dataBaseName">Name of database to use.</param>
+        /// <returns>Altered version of SQLCommandFactory.</returns>
         public SQLCommandFactory Use(string dataBaseName)
         {
-            if(dataBaseName.Contains(' '))
+            if (dataBaseName.Contains(' '))
             {
                 dataBaseName = $"[{dataBaseName}]";
             }
@@ -696,10 +895,10 @@ namespace CoinCollection
         }
 
         /// <summary>
-        /// The Set SQL command
+        /// The Set SQL command.
         /// </summary>
-        /// <param name="setInfo">List of values to set</param>
-        /// <returns>Altered version of SQLCommandFactory</returns>
+        /// <param name="setInfo">List of values to set.</param>
+        /// <returns>Altered version of SQLCommandFactory.</returns>
         public SQLCommandFactory Set(params SetCommand[] setInfo)
         {
             _sqlCommand.Append("SET ");
@@ -708,7 +907,7 @@ namespace CoinCollection
             {
                 string pName = $"@param{_sqlParameters.Count}";
                 _sqlCommand.Append($"[{item.NameParam}] = {pName}, ");
-                _sqlParameters.Add(new (pName, item.Value));
+                _sqlParameters.Add(new(pName, item.Value));
             }
 
             _sqlCommand.Remove(_sqlCommand.Length - 2, 1);
@@ -717,9 +916,9 @@ namespace CoinCollection
         }
 
         /// <summary>
-        /// Ends the command with a comma
+        /// Ends the command with a comma.
         /// </summary>
-        /// <returns>Altered version of SQLCommandFactory</returns>
+        /// <returns>Altered version of SQLCommandFactory.</returns>
         public SQLCommandFactory EndCommand()
         {
             _sqlCommand.Append("; ");
@@ -727,6 +926,11 @@ namespace CoinCollection
             return this;
         }
 
+        /// <summary>
+        /// Custom command.
+        /// </summary>
+        /// <param name="customString">Custom command value.</param>
+        /// <returns>Altered version of SQLCommandFactory.</returns>
         public SQLCommandFactory Custom(string customString)
         {
             _sqlCommand.Append($"{customString} ");
@@ -734,11 +938,16 @@ namespace CoinCollection
             return this;
         }
 
-        public SQLCommandFactory Comna(bool removeSpace = true)
+        /// <summary>
+        /// Adds a comma to the SQL command.
+        /// </summary>
+        /// <param name="removeSpace">Removes the space at the end of the command.</param>
+        /// <returns>Altered version of SQLCommandFactory.</returns>
+        public SQLCommandFactory Comma(bool removeSpace = true)
         {
-            if(removeSpace && _sqlCommand.ToString().EndsWith(' '))
+            if (removeSpace && _sqlCommand.ToString().EndsWith(' '))
             {
-                //https://stackoverflow.com/questions/23626703/stringbuilder-find-last-index-of-a-character
+                // https://stackoverflow.com/questions/23626703/stringbuilder-find-last-index-of-a-character
                 _sqlCommand.Length--;
             }
 
@@ -747,6 +956,11 @@ namespace CoinCollection
             return this;
         }
 
+        /// <summary>
+        /// The Exec SQL command.
+        /// </summary>
+        /// <param name="value">Value to execute.</param>
+        /// <returns>Altered version of SQLCommandFactory.</returns>
         public SQLCommandFactory Exec(string value)
         {
             _sqlCommand.Append($"EXEC {value} ");
@@ -754,10 +968,33 @@ namespace CoinCollection
             return this;
         }
 
+        /// <summary>
+        /// Backups the current database.
+        /// </summary>
+        /// <param name="databaseName">Database to backup.</param>
+        /// <param name="path">Path to save database to.</param>
+        /// <returns>Altered version of SQLCommandFactory.</returns>
+        public SQLCommandFactory Backup_Database(string databaseName, string path)
+        {
+            _sqlCommand.Append($"BACKUP DATABASE [{databaseName}] TO DISK = ");
 
+            AddParam(path, string.Empty, " ");
+
+            return this;
+        }
+
+        /// <summary>
+        /// Converts the created SQL command into a string.
+        /// </summary>
+        /// <param name="endWithSemiColon">Ends the string SQL command with a semicolon.</param>
+        /// <param name="clearCommand">Clears the string and paramiters.</param>
+        /// <returns>Altered version of SQLCommandFactory.</returns>
         public string ToCommandText(bool endWithSemiColon = true, bool clearCommand = true)
         {
-            _sqlCommand.Remove(_sqlCommand.Length - 1, 1);
+            if (_sqlCommand.ToString().EndsWith(' '))
+            {
+                _sqlCommand.Remove(_sqlCommand.Length - 1, 1);
+            }
 
             if (endWithSemiColon)
             {
@@ -766,7 +1003,7 @@ namespace CoinCollection
 
             string command = _sqlCommand.ToString();
 
-            foreach(SqlParameter parameter in _sqlParameters)
+            foreach (SqlParameter parameter in _sqlParameters)
             {
                 command = command.Replace(parameter.ParameterName, ConvertValue(parameter.Value));
             }
@@ -781,26 +1018,29 @@ namespace CoinCollection
         }
 
         /// <summary>
-        /// Converts the SQL command from the string to an SQL command
+        /// Converts the SQL command from the string to an SQL command.
         /// </summary>
-        /// <param name="connection">SQLConnection to be used if avalible</param>
-        /// <param name="endWithSemiColon">Ends the string SQL command with a semicolon</param>
-        /// <param name="clearCommand">Clears the string and paramiters</param>
-        /// <returns>The created SQL command</returns>
+        /// <param name="connection">SQLConnection to be used if avalible.</param>
+        /// <param name="endWithSemiColon">Ends the string SQL command with a semicolon.</param>
+        /// <param name="clearCommand">Clears the string and paramiters.</param>
+        /// <returns>The created SQL command.</returns>
         public SqlCommand ToSQLCommand(SqlConnection? connection = null, bool endWithSemiColon = true, bool clearCommand = true)
         {
-            _sqlCommand.Remove(_sqlCommand.Length - 1, 1);
+            if (_sqlCommand.ToString().EndsWith(' '))
+            {
+                _sqlCommand.Remove(_sqlCommand.Length - 1, 1);
+            }
 
             if (endWithSemiColon)
             {
                 _sqlCommand.Append(';');
             }
 
-            SqlCommand sqlCommand = new (_sqlCommand.ToString(), connection);
+            SqlCommand sqlCommand = new(_sqlCommand.ToString(), connection);
 
             sqlCommand.Parameters.AddRange([.. _sqlParameters]);
 
-            if(clearCommand)
+            if (clearCommand)
             {
                 _sqlParameters.Clear();
                 _sqlCommand.Clear();
@@ -810,23 +1050,23 @@ namespace CoinCollection
         }
 
         /// <summary>
-        /// Converts the SQL command from the string to an SQL data adapter
+        /// Converts the SQL command from the string to an SQL data adapter.
         /// </summary>
-        /// <param name="connection">SQLConnection to be used if avalible</param>
-        /// <param name="endWithSemiColon">Ends the string SQL command with a semicolon</param>
-        /// <param name="clearCommand">Clears the string and paramiters</param>
-        /// <returns>The created SQL data adapter</returns>
+        /// <param name="connection">SQLConnection to be used if avalible.</param>
+        /// <param name="endWithSemiColon">Ends the string SQL command with a semicolon.</param>
+        /// <param name="clearCommand">Clears the string and paramiters.</param>
+        /// <returns>The created SQL data adapter.</returns>
         public SqlDataAdapter ToSQLDataAdapter(SqlConnection? connection = null, bool endWithSemiColon = true, bool clearCommand = true)
         {
             return new SqlDataAdapter(ToSQLCommand(connection, endWithSemiColon, clearCommand));
         }
 
         /// <summary>
-        /// Converts the operator types to their string counterparts
+        /// Converts the operator types to their string counterparts.
         /// </summary>
-        /// <param name="oTypes">Operator types</param>
-        /// <returns>Converted operator type</returns>
-        /// <exception cref="Exception"></exception>
+        /// <param name="oTypes">Operator types.</param>
+        /// <returns>Converted operator type.</returns>
+        /// <exception cref="ArgumentException">Throws when an unknown opertator is added but no value is set for it.</exception>
         private static string OperatorConvert(OperatorTypes oTypes)
         {
             return oTypes switch
@@ -853,20 +1093,46 @@ namespace CoinCollection
                 OperatorTypes.Bitwise_AND_Equals => "&=",
                 OperatorTypes.Bitwise_Exclusive_Equals => "^-=",
                 OperatorTypes.Bitwise_OR_Equals => "|*=",
-                _ => throw new Exception($"Unknown operator [{oTypes}]"),
+                _ => throw new ArgumentException($"Unknown operator [{oTypes}]"),
             };
         }
 
         /// <summary>
-        /// Adds a parameter to the list of SQL parameters unless its a floating point value (float, double, decimal) due to floating point error, which is added to the command differently
+        /// Converts value to a string with proper format.
         /// </summary>
-        /// <typeparam name="T">Type of parameter value</typeparam>
-        /// <param name="value">Value of the parameter</param>
-        /// <param name="startAppend">Additional command structure before inserting the value name into the command</param>
-        /// <param name="endAppend">Additional command structure after inserting the value name into the command</param>
+        /// <param name="value">Value to convert.</param>
+        /// <returns>The converted value.</returns>
+        /// <exception cref="ArgumentNullException">If the value can not be converted to a string.</exception>
+        private static string ConvertValue(object value)
+        {
+            if (value == DBNull.Value)
+            {
+                return "NULL";
+            }
+
+            if (value.ToString() == null)
+            {
+                throw new ArgumentNullException($"Unable to convert {value} to string!!!");
+            }
+
+            return Type.GetTypeCode(value.GetType()) switch
+            {
+                TypeCode.String or TypeCode.Char => $"'{value}'",
+                TypeCode.DateTime => $"'{(DateTime)value}'",
+                TypeCode.Boolean => (bool)value ? "1" : "0",
+                _ => value.ToString()!,
+            };
+        }
+
+        /// <summary>
+        /// Adds a parameter to the list of SQL parameters unless its a floating point value (float, double, decimal) due to floating point error, which is added to the command differently.
+        /// </summary>
+        /// <param name="value">Value of the parameter.</param>
+        /// <param name="startAppend">Additional command structure before inserting the value name into the command.</param>
+        /// <param name="endAppend">Additional command structure after inserting the value name into the command.</param>
         private void AddParam(object value, string startAppend = "", string endAppend = "")
         {
-            if(value is float valueF)
+            if (value is float valueF)
             {
                 _sqlCommand.Append($"{startAppend}{valueF}{endAppend}");
             }
@@ -885,49 +1151,18 @@ namespace CoinCollection
         }
 
         /// <summary>
-        /// Adds a parameter to the list of SQL parameters
+        /// Adds a parameter to the list of SQL parameters.
         /// </summary>
-        /// <typeparam name="T">Type of parameter value</typeparam>
-        /// <param name="value">Value of the parameter</param>
-        /// <param name="startAppend">Additional command structure before inserting the value name into the command</param>
-        /// <param name="endAppend">Additional command structure after inserting the value name into the command</param>
-        private void AddParam<T>(T value, string startAppend = "", string endAppend = "") where T : notnull
+        /// <typeparam name="T">Type of parameter value.</typeparam>
+        /// <param name="value">Value of the parameter.</param>
+        /// <param name="startAppend">Additional command structure before inserting the value name into the command.</param>
+        /// <param name="endAppend">Additional command structure after inserting the value name into the command.</param>
+        private void AddParam<T>(T value, string startAppend = "", string endAppend = "")
+            where T : notnull
         {
-            /*if(value is string valueS && valueS.Contains(' '))
-            {
-                value = (T)Convert.ChangeType($"[{value}]", typeof(T));
-            }*/
-
             string pName = $"@param{_sqlParameters.Count}";
             _sqlCommand.Append($"{startAppend}{pName}{endAppend}");
             _sqlParameters.Add(new SqlParameter(pName, value));
-        }
-
-        /// <summary>
-        /// Converts value to a string with proper format
-        /// </summary>
-        /// <param name="value">Value to convert</param>
-        /// <returns>The converted value</returns>
-        /// <exception cref="ArgumentNullException"></exception>
-        private static string ConvertValue(object value)
-        {
-            if (value == DBNull.Value)
-            {
-                return "NULL";
-            }
-
-            if(value.ToString() == null)
-            {
-                throw new ArgumentNullException($"Unable to convert {value} to string!!!");
-            }
-
-            return Type.GetTypeCode(value.GetType()) switch
-            {
-                TypeCode.String or TypeCode.Char => $"'{value}'",
-                TypeCode.DateTime => $"'{(DateTime)value}'",
-                TypeCode.Boolean => (bool)value ? "1" : "0",
-                _ => value.ToString()!
-            };
         }
     }
 }

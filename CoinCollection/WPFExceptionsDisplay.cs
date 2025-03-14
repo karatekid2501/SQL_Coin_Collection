@@ -1,22 +1,24 @@
-﻿using System;
-using System.Collections.Generic;
+﻿// <copyright file="WPFExceptionsDisplay.cs" company="Karatekid2501">
+// Copyright (c) Karatekid2501. All rights reserved.
+// </copyright>
+
 using System.Diagnostics;
-using System.Linq;
 using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
-using System.Xml.Linq;
 
 namespace CoinCollection
 {
-    enum WPFExceptionsIcons
+    /// <summary>
+    /// Exception icon to display when an exception is shown.
+    /// </summary>
+    public enum WPFExceptionsIcons
     {
+#pragma warning disable SA1602 // Enumeration items should be documented
         None = 0,
         IDI_Application = 32512,
         IDI_Hand,
@@ -24,18 +26,18 @@ namespace CoinCollection
         IDI_Exclamation,
         IDI_Asterisk,
         IDI_Winlogo,
-        IDI_Shield
+        IDI_Shield,
+#pragma warning restore SA1602 // Enumeration items should be documented
     }
 
     /// <summary>
-    /// Main class to easily display errors
+    /// Main class to easily display errors.
     /// </summary>
-    internal class WPFExceptionsDisplay : IDisposable
+    internal partial class WPFExceptionsDisplay : IDisposable
     {
-        #region Get window icons
         private static BitmapSource GetShellIcon(WPFExceptionsIcons iconName = WPFExceptionsIcons.None)
         {
-            if(iconName == WPFExceptionsIcons.None)
+            if (iconName == WPFExceptionsIcons.None)
             {
                 return null!;
             }
@@ -43,7 +45,9 @@ namespace CoinCollection
             IntPtr hIcon = LoadIcon(IntPtr.Zero, (int)iconName); // IDI_WARNING
 
             if (hIcon == IntPtr.Zero)
+            {
                 throw new InvalidOperationException("Failed to load system icon.");
+            }
 
             BitmapSource icon = Imaging.CreateBitmapSourceFromHIcon(
                 hIcon,
@@ -54,52 +58,74 @@ namespace CoinCollection
             return icon;
         }
 
-        [DllImport("user32.dll", SetLastError = true)]
-        private static extern IntPtr LoadIcon(IntPtr hInstance, int lpIconName);
+        [LibraryImport("user32.dll", SetLastError = true)]
+        private static partial IntPtr LoadIcon(IntPtr hInstance, int lpIconName);
 
-        [DllImport("user32.dll", SetLastError = true)]
+        [LibraryImport("user32.dll", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        private static extern bool DestroyIcon(IntPtr hIcon);
-        #endregion
+        private static partial bool DestroyIcon(IntPtr hIcon);
+    }
 
-        public delegate void DisplayHandler();
-        public delegate void HideHandler();
-
-        public DisplayHandler? Display;
-        public HideHandler? Hide;
-
+    /// <summary>
+    /// Implementation of WPFExceptionsDisplay.
+    /// </summary>
+    internal partial class WPFExceptionsDisplay : IDisposable
+    {
         private readonly StackPanel _parent;
 
         private readonly bool _hasSeparator;
 
         /// <summary>
-        /// 
+        /// Display the exceptions.
         /// </summary>
-        /// <param name="parent"></param>
+        private DisplayHandler? _display;
+
+        /// <summary>
+        /// Hide the exceptions.
+        /// </summary>
+        private HideHandler? _hide;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="WPFExceptionsDisplay"/> class.
+        /// </summary>
+        /// <param name="parent">Parent to add exceptions to.</param>
+        /// <param name="hasSeparator">Seperate each exceptions.</param>
         public WPFExceptionsDisplay(StackPanel parent, bool hasSeparator = false)
         {
             _parent = parent;
 
-            Display += DisplayExceptions;
-            Hide += ConcealExceptions;
+            _display += DisplayExceptions;
+            _hide += ConcealExceptions;
             _hasSeparator = hasSeparator;
         }
 
+        /// <summary>
+        /// Handles the display.
+        /// </summary>
+        public delegate void DisplayHandler();
+
+        /// <summary>
+        /// Handles the hide.
+        /// </summary>
+        public delegate void HideHandler();
+
+        /// <inheritdoc/>
         public void Dispose()
         {
-            _parent.Children.Clear();
-            Display -= DisplayExceptions;
-            Hide -= ConcealExceptions;
+            Dispose(true);
+            GC.SuppressFinalize(this);
         }
 
         /// <summary>
-        /// Adds an exception to the error list
+        /// Adds an exception to the error list.
         /// </summary>
-        /// <typeparam name="T">Type of exception</typeparam>
-        /// <param name="exception"></param>
-        public void Add<T>(WPFExceptionsDisplayItem<T> exception, WPFExceptionsIcons iconName = WPFExceptionsIcons.None) where T : Exception
+        /// <typeparam name="T">Type of exception.</typeparam>
+        /// <param name="exception">Information about the exception.</param>
+        /// <param name="iconName">Icon to use.</param>
+        public void Add<T>(WPFExceptionsDisplayItem<T> exception, WPFExceptionsIcons iconName = WPFExceptionsIcons.None)
+            where T : Exception
         {
-            if(_hasSeparator && _parent.Children.Count != 0)
+            if (_hasSeparator && _parent.Children.Count != 0)
             {
                 _parent.Children.Add(new Separator());
             }
@@ -107,6 +133,10 @@ namespace CoinCollection
             _parent.Children.Add(BuildUI(exception, GetShellIcon(iconName)));
         }
 
+        /// <summary>
+        /// Remove the exception at position.
+        /// </summary>
+        /// <param name="value">Position to remove the exception.</param>
         public void RemoveAt(int value)
         {
             ArgumentOutOfRangeException.ThrowIfNegative(value);
@@ -115,16 +145,20 @@ namespace CoinCollection
             _parent.Children.RemoveAt(value);
         }
 
+        /// <summary>
+        /// Removes an exception from the list of exceptions.
+        /// </summary>
+        /// <param name="name">Name of exception to remove.</param>
         public void Remove(string name)
         {
-            if(name == _parent.Name)
+            if (name == _parent.Name)
             {
                 return;
             }
 
             UIElement child = (UIElement)_parent.FindName(name);
 
-            if(child != null)
+            if (child != null)
             {
                 _parent.Children.Remove(child);
             }
@@ -134,45 +168,80 @@ namespace CoinCollection
             }
         }
 
-        public void Remove<T>(WPFExceptionsDisplayItem<T> wPFExceptionsDisplayItem) where T : Exception
+        /// <summary>
+        /// Removes an exception from the list of exceptions.
+        /// </summary>
+        /// <typeparam name="T">Type of exception to use.</typeparam>
+        /// <param name="wPFExceptionsDisplayItem">Exception to remove.</param>
+        public void Remove<T>(WPFExceptionsDisplayItem<T> wPFExceptionsDisplayItem)
+            where T : Exception
         {
             Remove(wPFExceptionsDisplayItem.Name);
         }
 
+        /// <summary>
+        /// Removes an exception from the list of exceptions.
+        /// </summary>
+        /// <param name="child">UIElement exception to remove.</param>
         public void Remove(UIElement child)
         {
-            if(child != _parent)
+            if (child != _parent)
             {
                 _parent.Children.Remove(child);
             }
         }
 
+        /// <summary>
+        /// Clears the exceptions.
+        /// </summary>
         public void Clear()
         {
             _parent.Children.Clear();
         }
 
+        /// <summary>
+        /// Shows the exceptions.
+        /// </summary>
         public void ShowExceptions()
         {
-            Display!.Invoke();
+            _display!.Invoke();
         }
 
+        /// <summary>
+        /// Hides the exceptions.
+        /// </summary>
+        /// <param name="clearExceptions">When hidden, should the exceptions be cleared.</param>
         public void HideExceptions(bool clearExceptions = false)
         {
-            if(clearExceptions)
+            if (clearExceptions)
             {
                 Clear();
             }
 
-            Hide!.Invoke();
+            _hide!.Invoke();
         }
 
-        protected virtual UIElement BuildUI<T>(WPFExceptionsDisplayItem<T> exception, BitmapSource iconInfo) where T : Exception
+        /// <summary>
+        /// Converts the colour to the brush.
+        /// </summary>
+        /// <param name="color">Colour to use.</param>
+        /// <returns>The brush of the colour.</returns>
+        protected static Brush ColourToBrush(Color color) => new SolidColorBrush(color);
+
+        /// <summary>
+        /// Builds the UI.
+        /// </summary>
+        /// <typeparam name="T">Type of exception to use.</typeparam>
+        /// <param name="exception">Information about the exception.</param>
+        /// <param name="iconInfo">Icon to use.</param>
+        /// <returns>The built UIElement.</returns>
+        protected virtual UIElement BuildUI<T>(WPFExceptionsDisplayItem<T> exception, BitmapSource iconInfo)
+            where T : Exception
         {
-            StackPanel exceptionInfo = new() 
+            StackPanel exceptionInfo = new()
             {
                 Orientation = Orientation.Horizontal,
-                Background = ColourToBrush(exception.BackgroundColour)
+                Background = ColourToBrush(exception.BackgroundColour),
             };
 
             exceptionInfo.Children.Add(new Image()
@@ -185,29 +254,35 @@ namespace CoinCollection
             exceptionInfo.Children.Add(new Label()
             {
                 Content = exception.Name,
-                Foreground = ColourToBrush(exception.TextColour)
+                Foreground = ColourToBrush(exception.TextColour),
             });
 
-            //https://stackoverflow.com/questions/13584998/how-to-add-a-vertical-separator
+            // https://stackoverflow.com/questions/13584998/how-to-add-a-vertical-separator
             exceptionInfo.Children.Add(new Rectangle()
             {
                 VerticalAlignment = VerticalAlignment.Stretch,
                 Fill = ColourToBrush(Colors.DarkGray),
-                Width = 1
+                Width = 1,
             });
 
             exceptionInfo.Children.Add(new Label()
             {
                 Content = exception.Description,
-                Foreground = ColourToBrush(exception.TextColour)
+                Foreground = ColourToBrush(exception.TextColour),
             });
 
             return exceptionInfo;
         }
 
-        protected static Brush ColourToBrush(Color color)
+        /// <summary>
+        /// Disposes values.
+        /// </summary>
+        /// <param name="disposing">Is the class being disposed.</param>
+        protected virtual void Dispose(bool disposing)
         {
-            return new SolidColorBrush(color);
+            _parent.Children.Clear();
+            _display -= DisplayExceptions;
+            _hide -= ConcealExceptions;
         }
 
         private void DisplayExceptions()
