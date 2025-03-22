@@ -148,15 +148,15 @@ namespace CoinCollection
     /// <param name="textColour">Text colour.</param>
     /// <param name="wsl">Start location for the CustomMessageBox window.</param>
     /// <param name="topMost">Should CustomMessageBox window be at the top of other windows.</param>
-    public class CustomMessageBoxParameters(Color titleColour, Color backgroundColor, Color textColour, WindowStartupLocation wsl = WindowStartupLocation.CenterScreen, bool topMost = true)
+    public class CustomMessageBoxParameters(Color titleColour, Color backgroundColor, Color textColour, WindowStartupLocation wsl = WindowStartupLocation.CenterScreen, Window? owner = null, bool topMost = true)
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="CustomMessageBoxParameters"/> class.
         /// </summary>
         /// <param name="wsl">Start location for the CustomMessageBox window.</param>
         /// <param name="topMost">Should CustomMessageBox window be at the top of other windows.</param>
-        public CustomMessageBoxParameters(WindowStartupLocation wsl = WindowStartupLocation.CenterScreen, bool topMost = true)
-            : this(Colors.Gray, Colors.White, Colors.Black, wsl, topMost)
+        public CustomMessageBoxParameters(WindowStartupLocation wsl = WindowStartupLocation.CenterScreen, Window? owner = null, bool topMost = true)
+            : this(Colors.Gray, Colors.White, Colors.Black, wsl, owner, topMost)
         {
         }
 
@@ -166,8 +166,8 @@ namespace CoinCollection
         /// <param name="titleColour">Title colour.</param>
         /// <param name="wsl">Start location for the CustomMessageBox window.</param>
         /// <param name="topMost">Should CustomMessageBox window be at the top of other windows.</param>
-        public CustomMessageBoxParameters(Color titleColour, WindowStartupLocation wsl = WindowStartupLocation.CenterScreen, bool topMost = true)
-            : this(titleColour, Colors.White, Colors.Black, wsl, topMost)
+        public CustomMessageBoxParameters(Color titleColour, WindowStartupLocation wsl = WindowStartupLocation.CenterScreen, Window? owner = null, bool topMost = true)
+            : this(titleColour, Colors.White, Colors.Black, wsl, owner, topMost)
         {
         }
 
@@ -178,8 +178,8 @@ namespace CoinCollection
         /// <param name="backgroundColor">Background colour.</param>
         /// <param name="wsl">Start location for the CustomMessageBox window.</param>
         /// <param name="topMost">Should CustomMessageBox window be at the top of other windows.</param>
-        public CustomMessageBoxParameters(Color titleColour, Color backgroundColor, WindowStartupLocation wsl = WindowStartupLocation.CenterScreen, bool topMost = true)
-            : this(titleColour, backgroundColor, Colors.Black, wsl, topMost)
+        public CustomMessageBoxParameters(Color titleColour, Color backgroundColor, WindowStartupLocation wsl = WindowStartupLocation.CenterScreen, Window? owner = null, bool topMost = true)
+            : this(titleColour, backgroundColor, Colors.Black, wsl, owner, topMost)
         {
         }
 
@@ -207,6 +207,8 @@ namespace CoinCollection
         /// Gets a value indicating whether a window appears in the topmost z-order.
         /// </summary>
         public bool TopMost { get; private set; } = topMost;
+
+        public Window? Owner { get; private set; } = owner;
     }
 
     /// <summary>
@@ -353,8 +355,8 @@ namespace CoinCollection
         /// Initializes a new instance of the <see cref="CustomMessageBoxWindow"/> class.
         /// </summary>
         /// <param name="window">Owner of this window.</param>
-        public CustomMessageBoxWindow(Window? window = null)
-            : this(DefualtParameters, window)
+        private CustomMessageBoxWindow()
+            : this(DefualtParameters)
         {
         }
 
@@ -362,8 +364,7 @@ namespace CoinCollection
         /// Initializes a new instance of the <see cref="CustomMessageBoxWindow"/> class.
         /// </summary>
         /// <param name="parameters">Parameters for how the message box will appeare.</param>
-        /// <param name="window">Owner of this window.</param>
-        public CustomMessageBoxWindow(CustomMessageBoxParameters parameters, Window? window = null)
+        private CustomMessageBoxWindow(CustomMessageBoxParameters parameters)
             : base(
                   new AdvanceSystemMenu(
                       AdvanceSystemMenuDefualtButtons.SC_RESTORE | AdvanceSystemMenuDefualtButtons.SC_SIZE |
@@ -377,7 +378,7 @@ namespace CoinCollection
         {
             _parameters = parameters;
 
-            Owner = window;
+            Owner = _parameters.Owner;
 
             Topmost = _parameters.TopMost;
 
@@ -402,6 +403,198 @@ namespace CoinCollection
         /// </summary>
         public static CustomMessageBoxParameters DefualtParameters { get; set; } = new();
 
+        public static int Show()
+        {
+            CustomMessageBoxWindow instance = new();
+
+            instance.ShowDialog(WindowStartupLocation.CenterScreen, true);
+
+            return instance._result;
+        }
+
+        public static int Show(string title)
+        {
+            return Show(new CustomMessageBoxWindow(), title, string.Empty, null, null, null, null);
+        }
+
+        public static int Show(string title, string description)
+        {
+            return Show(new CustomMessageBoxWindow(), title, description, null, null, null, null);
+        }
+
+        public static int Show(string title, string description, CustomMessageBoxImage imageInfo)
+        {
+            return Show(new CustomMessageBoxWindow(), title, description, imageInfo, null, null, null);
+        }
+
+        public static int Show(string title, string description, CustomMessageBoxImage imageInfo, CustomMessageBoxButtonInfo button1)
+        {
+            return Show(new CustomMessageBoxWindow(), title, description, imageInfo, button1, null, null);
+        }
+
+        public static int Show(string title, string description, CustomMessageBoxImage imageInfo, CustomMessageBoxButtonInfo button1, CustomMessageBoxButtonInfo button2)
+        {
+            return Show(new CustomMessageBoxWindow(), title, description, imageInfo, button1, button2, null);
+        }
+
+        public static int Show(string title, string description, CustomMessageBoxImage imageInfo, CustomMessageBoxButtonInfo button1, CustomMessageBoxButtonInfo button2, CustomMessageBoxButtonInfo button3)
+        {
+            return Show(new CustomMessageBoxWindow(), title, description, imageInfo, button1, button2, button3);
+        }
+
+        public static int Show(string title, string description, CustomMessageBoxImage imageInfo, CustomMessageBoxCheckBoxInfo cbInfo, out bool checkBoxResult)
+        {
+            return Show(new CustomMessageBoxWindow(), title, description, imageInfo, cbInfo, out checkBoxResult, null, null, null);
+        }
+
+        public static int Show(string title, string description, CustomMessageBoxImage imageInfo, CustomMessageBoxCheckBoxInfo cbInfo, out bool checkBoxResult, CustomMessageBoxButtonInfo button1)
+        {
+            return Show(new CustomMessageBoxWindow(), title, description, imageInfo, cbInfo, out checkBoxResult, button1, null, null);
+        }
+
+        public static int Show(string title, string description, CustomMessageBoxImage imageInfo, CustomMessageBoxCheckBoxInfo cbInfo, out bool checkBoxResult, CustomMessageBoxButtonInfo button1, CustomMessageBoxButtonInfo button2)
+        {
+            return Show(new CustomMessageBoxWindow(), title, description, imageInfo, cbInfo, out checkBoxResult, button1, button2, null);
+        }
+
+        public static int Show(string title, string description, CustomMessageBoxImage imageInfo, CustomMessageBoxCheckBoxInfo cbInfo, out bool checkBoxResult, CustomMessageBoxButtonInfo button1, CustomMessageBoxButtonInfo button2, CustomMessageBoxButtonInfo button3)
+        {
+            return Show(new CustomMessageBoxWindow(), title, description, imageInfo, cbInfo, out checkBoxResult, button1, button2, button3);
+        }
+
+        public static int Show(string title, string description, CustomMessageBoxImage imageInfo, CustomMessageBoxCheckBoxInfo cbInfo, out bool? checkBoxResult)
+        {
+            return Show(new CustomMessageBoxWindow(), title, description, imageInfo, cbInfo, out checkBoxResult, null, null, null);
+        }
+
+        public static int Show(string title, string description, CustomMessageBoxImage imageInfo, CustomMessageBoxCheckBoxInfo cbInfo, out bool? checkBoxResult, CustomMessageBoxButtonInfo button1)
+        {
+            return Show(new CustomMessageBoxWindow(), title, description, imageInfo, cbInfo, out checkBoxResult, button1, null, null);
+        }
+
+        public static int Show(string title, string description, CustomMessageBoxImage imageInfo, CustomMessageBoxCheckBoxInfo cbInfo, out bool? checkBoxResult, CustomMessageBoxButtonInfo button1, CustomMessageBoxButtonInfo button2)
+        {
+            return Show(new CustomMessageBoxWindow(), title, description, imageInfo, cbInfo, out checkBoxResult, button1, button2, null);
+        }
+
+        public static int Show(string title, string description, CustomMessageBoxImage imageInfo, CustomMessageBoxCheckBoxInfo cbInfo, out bool? checkBoxResult, CustomMessageBoxButtonInfo button1, CustomMessageBoxButtonInfo button2, CustomMessageBoxButtonInfo button3)
+        {
+            return Show(new CustomMessageBoxWindow(), title, description, imageInfo, cbInfo, out checkBoxResult, button1, button2, button3);
+        }
+
+        public static int Show(CustomMessageBoxParameters parameters)
+        {
+            return Show(new CustomMessageBoxWindow(parameters), string.Empty, string.Empty, null, null, null, null);
+        }
+
+        public static int Show(CustomMessageBoxParameters parameters, string title)
+        {
+            return Show(new CustomMessageBoxWindow(parameters), title, string.Empty, null, null, null, null);
+        }
+
+        public static int Show(CustomMessageBoxParameters parameters, string title, string description)
+        {
+            return Show(new CustomMessageBoxWindow(parameters), title, description, null, null, null, null);
+        }
+
+        public static int Show(CustomMessageBoxParameters parameters, string title, string description, CustomMessageBoxImage imageInfo)
+        {
+            return Show(new CustomMessageBoxWindow(parameters), title, description, imageInfo, null, null, null);
+        }
+
+        public static int Show(CustomMessageBoxParameters parameters, string title, string description, CustomMessageBoxImage imageInfo, CustomMessageBoxButtonInfo button1)
+        {
+            return Show(new CustomMessageBoxWindow(parameters), title, description, imageInfo, button1, null, null);
+        }
+
+        public static int Show(CustomMessageBoxParameters parameters, string title, string description, CustomMessageBoxImage imageInfo, CustomMessageBoxButtonInfo button1, CustomMessageBoxButtonInfo button2)
+        {
+            return Show(new CustomMessageBoxWindow(parameters), title, description, imageInfo, button1, button2, null);
+        }
+
+        public static int Show(CustomMessageBoxParameters parameters, string title, string description, CustomMessageBoxImage imageInfo, CustomMessageBoxButtonInfo button1, CustomMessageBoxButtonInfo button2, CustomMessageBoxButtonInfo button3)
+        {
+            return Show(new CustomMessageBoxWindow(parameters), title, description, imageInfo, button1, button2, button3);
+        }
+
+        public static int Show(CustomMessageBoxParameters parameters, string title, string description, CustomMessageBoxImage imageInfo, CustomMessageBoxCheckBoxInfo cbInfo, out bool checkBoxResult)
+        {
+            return Show(new CustomMessageBoxWindow(parameters), title, description, imageInfo, cbInfo, out checkBoxResult, null, null, null);
+        }
+
+        public static int Show(CustomMessageBoxParameters parameters, string title, string description, CustomMessageBoxImage imageInfo, CustomMessageBoxCheckBoxInfo cbInfo, out bool checkBoxResult, CustomMessageBoxButtonInfo button1)
+        {
+            return Show(new CustomMessageBoxWindow(parameters), title, description, imageInfo, cbInfo, out checkBoxResult, button1, null, null);
+        }
+
+        public static int Show(CustomMessageBoxParameters parameters, string title, string description, CustomMessageBoxImage imageInfo, CustomMessageBoxCheckBoxInfo cbInfo, out bool checkBoxResult, CustomMessageBoxButtonInfo button1, CustomMessageBoxButtonInfo button2)
+        {
+            return Show(new CustomMessageBoxWindow(parameters), title, description, imageInfo, cbInfo, out checkBoxResult, button1, button2, null);
+        }
+
+        public static int Show(CustomMessageBoxParameters parameters, string title, string description, CustomMessageBoxImage imageInfo, CustomMessageBoxCheckBoxInfo cbInfo, out bool checkBoxResult, CustomMessageBoxButtonInfo button1, CustomMessageBoxButtonInfo button2, CustomMessageBoxButtonInfo button3)
+        {
+            return Show(new CustomMessageBoxWindow(parameters), title, description, imageInfo, cbInfo, out checkBoxResult, button1, button2, button3);
+        }
+
+        public static int Show(CustomMessageBoxParameters parameters, string title, string description, CustomMessageBoxImage imageInfo, CustomMessageBoxCheckBoxInfo cbInfo, out bool? checkBoxResult)
+        {
+            return Show(new CustomMessageBoxWindow(parameters), title, description, imageInfo, cbInfo, out checkBoxResult, null, null, null);
+        }
+
+        public static int Show(CustomMessageBoxParameters parameters, string title, string description, CustomMessageBoxImage imageInfo, CustomMessageBoxCheckBoxInfo cbInfo, out bool? checkBoxResult, CustomMessageBoxButtonInfo button1)
+        {
+            return Show(new CustomMessageBoxWindow(parameters), title, description, imageInfo, cbInfo, out checkBoxResult, button1, null, null);
+        }
+
+        public static int Show(CustomMessageBoxParameters parameters, string title, string description, CustomMessageBoxImage imageInfo, CustomMessageBoxCheckBoxInfo cbInfo, out bool? checkBoxResult, CustomMessageBoxButtonInfo button1, CustomMessageBoxButtonInfo button2)
+        {
+            return Show(new CustomMessageBoxWindow(parameters), title, description, imageInfo, cbInfo, out checkBoxResult, button1, button2, null);
+        }
+
+        public static int Show(CustomMessageBoxParameters parameters, string title, string description, CustomMessageBoxImage imageInfo, CustomMessageBoxCheckBoxInfo cbInfo, out bool? checkBoxResult, CustomMessageBoxButtonInfo button1, CustomMessageBoxButtonInfo button2, CustomMessageBoxButtonInfo button3)
+        {
+            return Show(new CustomMessageBoxWindow(parameters), title, description, imageInfo, cbInfo, out checkBoxResult, button1, button2, button3);
+        }
+
+        private static int Show(CustomMessageBoxWindow instance, string title, string description, CustomMessageBoxImage? imageInfo, CustomMessageBoxButtonInfo? button1, CustomMessageBoxButtonInfo? button2, CustomMessageBoxButtonInfo? button3)
+        {
+            return Show(instance, title, description, imageInfo, null, out bool? _, button1, button2, button3);
+        }
+
+        private static int Show(CustomMessageBoxWindow instance, string title, string description, CustomMessageBoxImage? imageInfo, CustomMessageBoxCheckBoxInfo? cbInfo, out bool checkBoxResult, CustomMessageBoxButtonInfo? button1, CustomMessageBoxButtonInfo? button2, CustomMessageBoxButtonInfo? button3)
+        {
+            int result = Show(instance, title, description, imageInfo, cbInfo, out bool? checkBoxResultNull, button1, button2, button3);
+
+            checkBoxResult = (bool)checkBoxResultNull!;
+
+            return result;
+        }
+
+        private static int Show(CustomMessageBoxWindow instance, string title, string description, CustomMessageBoxImage? imageInfo, CustomMessageBoxCheckBoxInfo? cbInfo, out bool? checkBoxResult, CustomMessageBoxButtonInfo? button1, CustomMessageBoxButtonInfo? button2, CustomMessageBoxButtonInfo? button3)
+        {
+            instance._useDefualtValues = false;
+
+            instance.Populate(title, description, imageInfo, cbInfo, button1, button2, button3);
+
+            instance.ShowDialog(WindowStartupLocation.CenterScreen, true);
+
+            checkBoxResult = instance.Extra_Option.IsChecked;
+
+            return instance._result;
+        }
+
+        /*public static int Show(Window window, string title)
+        {
+            //return Show(new CustomMessageBoxParameters(), window);
+        }
+
+        public static int Show(CustomMessageBoxParameters parameters, Window window, string title)
+        {
+            //return Show(new CustomMessageBoxParameters(), window);
+        }*/
+
+        /*
         /// <summary>
         /// Opens a message.
         /// </summary>
@@ -493,8 +686,9 @@ namespace CoinCollection
             checkBoxResult = Extra_Option.IsChecked;
 
             return result;
-        }
+        }*/
 
+        /*
         /// <summary>
         /// Opens a message.
         /// </summary>
@@ -537,7 +731,7 @@ namespace CoinCollection
             base.ShowDialog();
 
             return _result;
-        }
+        }*/
 
         /// <inheritdoc/>
         protected override void Close_Click(object sender, RoutedEventArgs e)
@@ -553,8 +747,6 @@ namespace CoinCollection
             if (_useDefualtValues)
             {
                 Populate();
-
-                Button_Parent.Children.Add(ButtonCreation(new CustomMessageBoxButtonInfo("Ok"), 1));
             }
 
             base.OnSourceInitialized(e);
@@ -595,16 +787,17 @@ namespace CoinCollection
 
         private bool CheckCurrentMonitorSize()
         {
-            return (_currentMonitorSize.Width <= SystemParameters.PrimaryScreenWidth - 0.00001f && _currentMonitorSize.Width >= SystemParameters.PrimaryScreenWidth + 0.00001f)
-                || (_currentMonitorSize.Height <= SystemParameters.PrimaryScreenHeight - 0.00001f && _currentMonitorSize.Height >= SystemParameters.PrimaryScreenHeight + 0.00001f);
+            return (_currentMonitorSize.Width <= SystemParameters.PrimaryScreenWidth - float.Epsilon && _currentMonitorSize.Width >= SystemParameters.PrimaryScreenWidth + float.Epsilon)
+                || (_currentMonitorSize.Height <= SystemParameters.PrimaryScreenHeight - float.Epsilon && _currentMonitorSize.Height >= SystemParameters.PrimaryScreenHeight + float.Epsilon);
         }
 
-        private void Populate(string title = "Info", string description = "Are you sure?", CustomMessageBoxImage? imageInfo = null, CustomMessageBoxCheckBoxInfo? cbInfo = null, params CustomMessageBoxButtonInfo[] buttons)
+        //private void Populate(string title = "Info", string description = "Are you sure?", CustomMessageBoxImage? imageInfo = null, CustomMessageBoxCheckBoxInfo? cbInfo = null, params CustomMessageBoxButtonInfo[] buttons)
+        private void Populate(string title = "Info", string description = "Are you sure?", CustomMessageBoxImage? imageInfo = null, CustomMessageBoxCheckBoxInfo? cbInfo = null, params CustomMessageBoxButtonInfo?[] buttons)
         {
-            if (buttons.Length > 3)
+            /*if (buttons.Length > 3)
             {
                 throw new ArgumentOutOfRangeException(nameof(buttons), "Not allowed to exceed 3 buttons");
-            }
+            }*/
 
             Title = title;
             Description.Text = description;
@@ -623,7 +816,7 @@ namespace CoinCollection
                 Extra_Option.IsChecked = cbInfo.IsChecked;
             }
 
-            if (buttons.Length == 0)
+            /*if (buttons.Length == 0)
             {
                 Button_Parent.Children.Add(ButtonCreation(new CustomMessageBoxButtonInfo("Ok"), 1));
             }
@@ -632,6 +825,27 @@ namespace CoinCollection
                 for (int i = 0; i < buttons.Length; i++)
                 {
                     Button_Parent.Children.Add(ButtonCreation(buttons[i], i + 1));
+                }
+            }*/
+
+            if (buttons.Length == 0 || buttons[0] == null)
+            {
+                Button_Parent.Children.Add(ButtonCreation(new CustomMessageBoxButtonInfo("Ok"), 1));
+            }
+            else
+            {
+                Button_Parent.Children.Add(ButtonCreation(buttons[0]!, 1));
+
+                for (int i = 1; i < buttons.Length; i++)
+                {
+                    if (buttons[i] != null)
+                    {
+                        Button_Parent.Children.Add(ButtonCreation(buttons[i]!, i + 1));
+                    }
+                    else
+                    {
+                        break;
+                    }
                 }
             }
         }

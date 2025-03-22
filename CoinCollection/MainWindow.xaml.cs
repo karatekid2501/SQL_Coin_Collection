@@ -496,7 +496,21 @@ namespace CoinCollection
 
         private void BackupServer_Click(object sender, RoutedEventArgs e)
         {
-            if (new CustomMessageBoxWindow().Show(
+            /*if (new CustomMessageBoxWindow().Show(
+                "Warning",
+                "Are you sure you want to backup your current database?",
+                new CustomMessageBoxImage(CustomMessageBoxImageInfoIcon.IDI_INFORMATION),
+                new CustomMessageBoxCheckBoxInfo("Is backup differentual", false),
+                out bool checkBoxResult,
+                new CustomMessageBoxButtonInfo("Yes"),
+                new CustomMessageBoxButtonInfo("No", null, true)) == 1)
+            {
+                Misc.BackupFile.Check(null, (string)_container.ExecuteScalar(new SQLCommandFactory().Select(SelectType.Name, "db_name()").ToSQLCommand()), checkBoxResult);
+            }*/
+
+            //CustomMessageBoxWindow.Show();
+
+            if (CustomMessageBoxWindow.Show(
                 "Warning",
                 "Are you sure you want to backup your current database?",
                 new CustomMessageBoxImage(CustomMessageBoxImageInfoIcon.IDI_INFORMATION),
@@ -508,7 +522,7 @@ namespace CoinCollection
                 Misc.BackupFile.Check(null, (string)_container.ExecuteScalar(new SQLCommandFactory().Select(SelectType.Name, "db_name()").ToSQLCommand()), checkBoxResult);
             }
 
-            if (App.GetInstance().Report.ShowMessage(
+            /*if (App.GetInstance().Report.ShowMessage(
                 "Are you sure you want to backup your current database?",
                 "Warning",
                 ReportSeverity.Info,
@@ -516,7 +530,7 @@ namespace CoinCollection
                 MessageBoxImage.Question) == MessageBoxResult.Yes)
             {
                 Misc.BackupFile.Check(null, (string)_container.ExecuteScalar(new SQLCommandFactory().Select(SelectType.Name, "db_name()").ToSQLCommand()));
-            }
+            }*/
         }
     }
 }

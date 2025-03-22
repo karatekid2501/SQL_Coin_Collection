@@ -7,7 +7,7 @@
         mc:Ignorable="d"
         Title="CustomMessageBoxWindow" Height="auto" Width="250" WindowStyle="None" AllowsTransparency="True" Background="Transparent" SizeToContent="WidthAndHeight" BorderThickness="1" ResizeMode="NoResize">
     <WindowChrome.WindowChrome>
-        <WindowChrome CaptionHeight="20" GlassFrameThickness="0" CornerRadius="0"/>
+        <WindowChrome CaptionHeight="20" GlassFrameThickness="0" CornerRadius="0" ResizeBorderThickness="0"/>
     </WindowChrome.WindowChrome>
     <Window.Resources>
         <Style x:Key="MessageBoxStyle" TargetType="Button">
